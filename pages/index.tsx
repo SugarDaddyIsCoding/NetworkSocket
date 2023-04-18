@@ -7,11 +7,12 @@ let socket;
 
 export default function Home() {
   useEffect(() => {
-    socketInitializer();
     return () => {
-      socket.emit("rdytodelete", socket.id, () => {
-        socket.disconnect(true);
-      });
+      if (socket) {
+        socket.emit("rdytodelete", socket.id, () => {
+          socket.disconnect(true);
+        });
+      }
     };
   }, []);
 
@@ -26,20 +27,36 @@ export default function Home() {
     socket = io();
 
     socket.on("update", (num) => {
-      console.log("uso janai", num);
-      setOnlineUser(num.online);
+      console.log("uso janai", num.clients);
+      console.log(num.clients.length);
+      setOnlineUser(num.clients);
     });
+  };
 
-    socket.emit("setusername", "hohohaha");
+  const Createuser = async (event) => {
+    event.preventDefault();
+    await socketInitializer();
+    const newusername = event.target.setusername.value;
+    console.log(newusername);
+    socket.emit("setusername", newusername);
   };
 
   return (
     <>
-      <h1 className="text-4xl">Currently Online User: {onlineUser}</h1>
-
-      <button className="px-4 py-2 bg-slate-300" onClick={() => {}}>
-        MANA
-      </button>
+      <h1 className="text-4xl">Currently Online User: {onlineUser?.length}</h1>
+      <form onSubmit={Createuser}>
+        <input
+          id="setusername"
+          className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
+        ></input>
+        <button className="px-4 border-red-500 bg-blue-200  py-2">GO</button>
+      </form>
+      {onlineUser?.map((data, index) => (
+        <div key={index}>
+          <span className="bg-red-200">Socket ID:{data.id}</span>
+          <span className="bg-yellow-200">Username: {data.username}</span>
+        </div>
+      ))}
     </>
   );
 }

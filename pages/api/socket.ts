@@ -23,8 +23,23 @@ export default function SocketHandler(req, res) {
     });
 
     socket.on("setusername", (msg) => {
-      console.log(socket.id, " wut ", onlineClients.get(socket.id));
-      onlineClients.set(socket.id, { id: socket.id, username: msg });
+      console.log(
+        socket.id,
+        " wut ",
+        onlineClients.get(socket.id),
+        "new name ",
+        msg
+      );
+      if (msg !== "") {
+        onlineClients.set(socket.id, { id: socket.id, username: msg });
+      } else {
+        onlineClients.set(socket.id, { id: socket.id, username: "No name" });
+      }
+
+      io.emit("update", {
+        online: onlineClients.size,
+        clients: [...onlineClients.values()],
+      });
     });
 
     console.log(onlineClients.size);
