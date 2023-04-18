@@ -17,6 +17,7 @@ export default function Home() {
   }, []);
 
   const [onlineUser, setOnlineUser] = useState();
+  const [onlineChat, setOnlineChat] = useState();
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -27,9 +28,10 @@ export default function Home() {
     socket = io();
 
     socket.on("update", (num) => {
-      console.log("uso janai", num.clients);
+      console.log("uso janai", num);
       console.log(num.clients.length);
       setOnlineUser(num.clients);
+      setOnlineChat(num.chatroom);
     });
   };
 
@@ -45,6 +47,7 @@ export default function Home() {
     <>
       <h1 className="text-4xl">Currently Online User: {onlineUser?.length}</h1>
       <form onSubmit={Createuser}>
+        <label>Set Nickname</label>
         <input
           id="setusername"
           className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
@@ -55,6 +58,34 @@ export default function Home() {
         <div key={index}>
           <span className="bg-red-200">Socket ID:{data.id}</span>
           <span className="bg-yellow-200">Username: {data.username}</span>
+          {data?.joinedroom?.map((data, index) => (
+            <div key={index}>Chatroom ID: {data}</div>
+          ))}
+        </div>
+      ))}
+
+      <div className="bg-slate-100">
+        <button
+          onClick={() => {
+            if (socket) {
+              console.log("sent");
+              socket.emit("createchatroom");
+            } else {
+              alert("Create Client first");
+            }
+          }}
+          className="px-4 border-red-500 bg-blue-200  py-2"
+        >
+          Create and join chatroom
+        </button>
+      </div>
+      <h1>List Of Available Chatroom</h1>
+      {onlineChat?.map((data, index) => (
+        <div key={index}>
+          <div>Chatroom ID: {data.chatroomid}</div>
+          {data?.member?.map((data, index) => (
+            <div key={index}>Member Socket ID: {data}</div>
+          ))}
         </div>
       ))}
     </>
