@@ -62,14 +62,41 @@ export default function SocketHandler(req, res) {
         member: [socket.id],
       });
 
-      console.log(onlineChatroom);
+      //console.log(onlineChatroom);
 
       update();
-      console.log(onlineClients.values());
+      //console.log(onlineClients.values());
 
       console.log("joined!!");
 
       startchatroomid++;
+    });
+
+    socket.on("joinchatroom", (chatroomid) => {
+      const currentChatroom = onlineChatroom.get(chatroomid);
+
+      if (currentChatroom.member.includes(socket.id)) {
+        //if already in that chatroom, don't join
+        console.log("already in this chatroom!");
+        return;
+      }
+      socket.join(chatroomid);
+
+      const existingUser = onlineClients.get(socket.id);
+
+      const newroom: Array<string> = existingUser.joinedroom;
+      newroom.push(chatroomid);
+      //console.log(newroom);
+      onlineClients.set(socket.id, { ...existingUser, joinedroom: newroom });
+
+      const newmember: Array<string> = currentChatroom.member;
+      newmember.push(socket.id);
+      onlineChatroom.set(chatroomid, {
+        ...currentChatroom,
+        member: newmember,
+      });
+
+      update();
     });
 
     socket.on("disconnect", () => {

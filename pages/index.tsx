@@ -68,7 +68,6 @@ export default function Home() {
         <button
           onClick={() => {
             if (socket) {
-              console.log("sent");
               socket.emit("createchatroom");
             } else {
               alert("Create Client first");
@@ -82,10 +81,24 @@ export default function Home() {
       <h1>List Of Available Chatroom</h1>
       {onlineChat?.map((data, index) => (
         <div key={index}>
-          <div>Chatroom ID: {data.chatroomid}</div>
+          <div>
+            Chatroom ID: {data.chatroomid} with size {data.member.length}
+          </div>
           {data?.member?.map((data, index) => (
             <div key={index}>Member Socket ID: {data}</div>
           ))}
+          <button
+            onClick={() => {
+              if (socket) {
+                socket.emit("joinchatroom", data.chatroomid);
+              } else {
+                alert("Create Client first");
+              }
+            }}
+            className="bg-lime-300 px-4 py-2 rounded-xl"
+          >
+            Join
+          </button>
         </div>
       ))}
     </>
