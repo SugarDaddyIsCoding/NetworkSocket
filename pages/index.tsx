@@ -6,27 +6,37 @@ import { useState, useEffect } from "react";
 let socket;
 
 export default function Home() {
-  const [hi, setHi] = useState("");
   useEffect(() => {
     socketInitializer();
     return () => {
-      socket.disconnect();
+      socket.emit("rdytodelete", socket.id, () => {
+        socket.disconnect(true);
+      });
     };
   }, []);
+
+  const [onlineUser, setOnlineUser] = useState();
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
     const g = await fetch("/api/socket");
+
     console.log(g);
 
-    setHi("FUCKING DADDY");
+    socket = io();
 
-    socket = io("http://localhost:3000");
+    socket.on("update", (num) => {
+      console.log("uso janai", num);
+      setOnlineUser(num.online);
+    });
+
+    socket.emit("setusername", "hohohaha");
   };
 
   return (
     <>
-      <div className="text-red-900">FUCK YOU {hi}</div>
+      <h1 className="text-4xl">Currently Online User: {onlineUser}</h1>
+
       <button className="px-4 py-2 bg-slate-300" onClick={() => {}}>
         MANA
       </button>
