@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
-let startchatroomid = 0;
+let startchatroomid = 0; //global variable for chatroom id
 const onlineClients = new Map(); // create a new Map to store client data
-const onlineChatroom = new Map();
+const onlineChatroom = new Map(); //Create a  new map to save a chatroom and all the client in each on
 export default function SocketHandler(req, res) {
   // It means that socket server was already initialised
   if (res.socket.server.io) {
@@ -14,6 +14,7 @@ export default function SocketHandler(req, res) {
   res.socket.server.io = io;
 
   const onConnection = (socket) => {
+    //new client joined!
     onlineClients.set(socket.id, {
       id: socket.id,
       username: "unknown",
@@ -24,13 +25,7 @@ export default function SocketHandler(req, res) {
     update();
 
     socket.on("setusername", (msg) => {
-      // console.log(
-      //   socket.id,
-      //   " wut ",
-      //   onlineClients.get(socket.id),
-      //   "new name ",
-      //   msg
-      // );
+      //Set username
       if (msg !== "") {
         onlineClients.set(socket.id, {
           id: socket.id,
@@ -44,11 +39,12 @@ export default function SocketHandler(req, res) {
           joinedroom: [],
         });
       }
-
+      //after set username uodate to every client
       update();
     });
 
     socket.on("createchatroom", () => {
+      //create new chatroom and put that client into the new created chatroom
       socket.join(startchatroomid.toString());
       const existingUser = onlineClients.get(socket.id);
 
@@ -64,17 +60,17 @@ export default function SocketHandler(req, res) {
 
       //console.log(onlineChatroom);
 
-      update();
+      update(); //reupdate after created chatroom
       //console.log(onlineClients.values());
 
       console.log("joined!!");
 
-      startchatroomid++;
+      startchatroomid++; //make this is unique
     });
 
     socket.on("joinchatroom", (chatroomid) => {
       const currentChatroom = onlineChatroom.get(chatroomid);
-
+      //Like create chatroom but join instead, use the chatroom id passed from frontend
       if (currentChatroom.member.includes(socket.id)) {
         //if already in that chatroom, don't join
         console.log("already in this chatroom!");
@@ -101,7 +97,7 @@ export default function SocketHandler(req, res) {
 
     socket.on("disconnect", () => {
       console.log("delete: ", socket.id);
-      onlineClients.delete(socket.id);
+      onlineClients.delete(socket.id); //remove disconnected client
 
       update();
       // send an "update" event to all clients with the updated online client data
@@ -113,6 +109,7 @@ export default function SocketHandler(req, res) {
     //reuse function
   };
 
+  //This f(x) use to update the new data and make every client see the same set of data
   const update = () => {
     io.emit("update", {
       online: onlineClients.size,

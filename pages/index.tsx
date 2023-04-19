@@ -26,7 +26,7 @@ export default function Home() {
     console.log(g);
 
     socket = io();
-
+    //everytime server send new data, all the client update state
     socket.on("update", (num) => {
       console.log("uso janai", num);
       console.log(num.clients.length);
@@ -37,7 +37,7 @@ export default function Home() {
 
   const Createuser = async (event) => {
     event.preventDefault();
-    await socketInitializer();
+    await socketInitializer(); //init new user everytime u click create username button
     const newusername = event.target.setusername.value;
     console.log(newusername);
     socket.emit("setusername", newusername);
