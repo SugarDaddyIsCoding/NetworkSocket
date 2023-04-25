@@ -134,10 +134,23 @@ export default function SocketHandler(req, res) {
       });
 
       update();
+
+      //remove him from the typingUsers List
+      typingUsers = typingUsers.filter(userId => userId !== socket.id)
+      io.emit(SocketEvents.UpdateTypingUsers, {
+        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
+      });
+
       console.log(socket.id, "successfully leave room", chatroomid);
     });
 
     socket.on(SocketEvents.SendMessage, (messagedata) => {
+      //remove him from the typingUsers List
+      typingUsers = typingUsers.filter(userId => userId !== socket.id)
+      io.emit(SocketEvents.UpdateTypingUsers, {
+        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
+      });
+
       //need to check if that user is in that chatroom
 
       const currentclient = onlineClients.get(socket.id);
@@ -153,12 +166,12 @@ export default function SocketHandler(req, res) {
       }
     });
 
-    
+
 
     socket.on(SocketEvents.Typing, () => {
 
       // delete countdown timer if any
-      const me: string  = socket.id;
+      const me: string = socket.id;
       clearTimeout(userTimers.get(me));
       userTimers.set(me, undefined);
 
@@ -181,10 +194,10 @@ export default function SocketHandler(req, res) {
       // do - remove him from the list typingUsers
       // do - remove the timer from userTimers (not sure)
       // emit an updateTypers event to client
-      let timerId = setTimeout(((me: string): (()=>void) => {
+      let timerId = setTimeout(((me: string): (() => void) => {
         return () => {
           console.log("typing timeout for ", me);
-          typingUsers = typingUsers.filter(userId => userId!==me)
+          typingUsers = typingUsers.filter(userId => userId !== me)
           io.emit(SocketEvents.UpdateTypingUsers, {
             typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
           });
@@ -204,6 +217,13 @@ export default function SocketHandler(req, res) {
 
       console.log("Disconnected!!", onlineClients.size);
       // Get a list of all active sockets
+
+
+      //remove him from the typingUsers List
+      typingUsers = typingUsers.filter(userId => userId !== socket.id)
+      io.emit(SocketEvents.UpdateTypingUsers, {
+        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
+      });
     });
 
     //reuse function
