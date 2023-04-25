@@ -2,6 +2,12 @@ import { Server } from "socket.io";
 let startchatroomid = 0; //global variable for chatroom id
 const onlineClients = new Map(); // create a new Map to store client data
 const onlineChatroom = new Map(); //Create a  new map to save a chatroom and all the client in each on
+
+// variables for "is typing" function
+let userTimers = new Map<string, NodeJS.Timeout | undefined>();
+let typingUsers = new Array<string>();
+const typingTimeout = 5000;
+
 export default function SocketHandler(req, res) {
   // It means that socket server was already initialised
   if (res.socket.server.io) {
@@ -145,6 +151,48 @@ export default function SocketHandler(req, res) {
         console.log("can't send not in this chatroom");
       }
     });
+
+    
+
+    socket.on("typing", () => {
+
+      // delete countdown timer if any
+      const me: string  = socket.id;
+      clearTimeout(userTimers.get(me));
+      userTimers.set(me, undefined);
+
+      // add the user to the list of typingUsers
+      if (!typingUsers.includes(me)) {
+        typingUsers.push(me);
+      }
+
+      console.log("typingUsers");
+      console.log(typingUsers);
+
+      // emit an updateTypers event to client
+      io.emit("updateTypingUsers", {
+        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username])
+      });
+
+
+
+      // startTimer for this dude, in the callback
+      // do - remove him from the list typingUsers
+      // do - remove the timer from userTimers (not sure)
+      // emit an updateTypers event to client
+      let timerId = setTimeout(((me: string): (()=>void) => {
+        return () => {
+          console.log("typing timeout for ", me);
+          typingUsers = typingUsers.filter(userId => userId!==me)
+          io.emit("updateTypingUsers", {
+            typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
+          });
+        }
+      })(me), typingTimeout);
+
+      userTimers.set(me, timerId);
+
+    })
 
     socket.on("disconnect", () => {
       console.log("delete: ", socket.id);

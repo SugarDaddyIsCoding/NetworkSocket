@@ -21,6 +21,8 @@ export default function Home() {
   const [mode, setMode] = useState(0);
   const [currentChatroom, setCurrentchatroom] = useState();
   const [currentmessage, setCurrentmessage] = useState([]);
+  const [typingUsers, setTypingUsers] = useState<string>("");
+  const [meName, setMeName] = useState<string | null>(null);
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -42,6 +44,15 @@ export default function Home() {
 
       setCurrentmessage((prevMessages) => [...prevMessages, tosend]);
     });
+
+    socket.on("updateTypingUsers", ({ typingUsers }) => {
+      setTypingUsers(
+        typingUsers
+          .filter((u) => u[0] !== socket.id)
+          .map((u) => u[1])
+          .toString()
+      );
+    });
   };
 
   const Createuser = async (event) => {
@@ -51,6 +62,7 @@ export default function Home() {
     console.log(newusername);
     socket.emit("setusername", newusername);
     setMode(1);
+    setMeName(newusername);
   };
 
   const Createmes = async (event) => {
@@ -71,6 +83,7 @@ export default function Home() {
 
   return (
     <>
+      {meName && <h1 className="text-white">Welcome {meName}</h1>}
       {mode === 0 && (
         <div className="flex items-center justify-center w-screen h-screen">
           <div>
@@ -182,17 +195,32 @@ export default function Home() {
               Chatroom ID: {currentChatroom}
             </h1>
           </div>
-          <form className="flex justify-center mt-5" onSubmit={Createmes}>
-            <input
-              id="chatmessage"
-              className="px-4 py-2 w-[60%] bg-white bg-opacity-70 "
-            />
-            <input
-              className="hidden"
-              id="chatroomid"
-              value={currentChatroom}
-            ></input>
-            <button className="px-4 py-2 bg-pink-200">Send</button>
+          <form
+            className="flex flex-col w-full items-center mt-5 h-20 "
+            onSubmit={Createmes}
+          >
+            <div id="textbox-wrapper" className=" flex justify-center w-[60%]">
+              <input
+                id="chatmessage"
+                className="px-4 py-2 w-full bg-white bg-opacity-70 "
+                onChange={() => {
+                  socket.emit("typing");
+                }}
+              />
+              <input
+                className="hidden"
+                id="chatroomid"
+                value={currentChatroom}
+              ></input>
+              <button className="px-4 py-2 bg-pink-200">Send</button>
+            </div>
+            <div id="is-typing-wrapper" className="w-[60%]">
+              {typingUsers !== "" && (
+                <p className="text-white">
+                  {typingUsers} is typing ...
+                </p>
+              )}
+            </div>
           </form>
           <h1 className="text-white mt-3 text-2xl flex justify-center">
             Message In Chatroom
