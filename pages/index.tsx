@@ -18,7 +18,8 @@ export default function Home() {
 
   const [onlineUser, setOnlineUser] = useState();
   const [onlineChat, setOnlineChat] = useState();
-
+  const [mode, setMode] = useState(0);
+  const [currentChatroom, setCurrentchatroom] = useState();
   const [currentmessage, setCurrentmessage] = useState([]);
 
   const socketInitializer = async () => {
@@ -49,6 +50,7 @@ export default function Home() {
     const newusername = event.target.setusername.value;
     console.log(newusername);
     socket.emit("setusername", newusername);
+    setMode(1);
   };
 
   const Createmes = async (event) => {
@@ -70,59 +72,79 @@ export default function Home() {
   return (
     <>
       <h1 className="text-4xl">Currently Online User: {onlineUser?.length}</h1>
-      <form onSubmit={Createuser}>
-        <label>Set Nickname</label>
-        <input
-          id="setusername"
-          className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
-        ></input>
-        <button className="px-4 border-red-500 bg-blue-200  py-2">GO</button>
-      </form>
-      {onlineUser?.map((data, index) => (
-        <div key={index}>
-          <span className="bg-red-200">Socket ID:{data.id}</span>
-          <span className="bg-yellow-200">Username: {data.username}</span>
-          {data?.joinedroom?.map((data, index) => (
-            <div key={index}>Chatroom ID: {data}</div>
+      {mode === 0 && (
+        <>
+          <form onSubmit={Createuser}>
+            <label>Set Nickname</label>
+            <input
+              id="setusername"
+              className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
+            ></input>
+            <button className="px-4 border-red-500 bg-blue-200  py-2">
+              GO
+            </button>
+          </form>
+        </>
+      )}
+      {mode === 1 && (
+        <>
+          {onlineUser?.map((data, index) => (
+            <div key={index}>
+              <span className="bg-red-200">Socket ID:{data.id}</span>
+              <span className="bg-yellow-200">Username: {data.username}</span>
+              {data?.joinedroom?.map((data, index) => (
+                <div key={index}>Chatroom ID: {data}</div>
+              ))}
+            </div>
           ))}
-        </div>
-      ))}
 
-      <div className="bg-slate-100">
-        <button
-          onClick={() => {
-            if (socket) {
-              socket.emit("createchatroom");
-            } else {
-              alert("Create Client first");
-            }
-          }}
-          className="px-4 border-red-500 bg-blue-200  py-2"
-        >
-          Create and join chatroom
-        </button>
-      </div>
-      <h1>List Of Available Chatroom</h1>
-      {onlineChat?.map((data, index) => (
-        <div key={index}>
-          <div>
-            Chatroom ID: {data.chatroomid} with size {data.member.length}
+          <div className="bg-slate-100">
+            <button
+              onClick={() => {
+                if (socket) {
+                  socket.emit("createchatroom", (response) => {
+                    setCurrentchatroom(response.socketid);
+                    setMode(2);
+                  });
+                } else {
+                  alert("Create Client first");
+                }
+              }}
+              className="px-4 border-red-500 bg-blue-200  py-2"
+            >
+              Create and join chatroom
+            </button>
           </div>
-          {data?.member?.map((data, index) => (
-            <div key={index}>Member Socket ID: {data}</div>
+          <h1>List Of Available Chatroom</h1>
+          {onlineChat?.map((data, index) => (
+            <div key={index}>
+              <div>
+                Chatroom ID: {data.chatroomid} with size {data.member.length}
+              </div>
+              {data?.member?.map((data, index) => (
+                <div key={index}>Member Socket ID: {data}</div>
+              ))}
+              <button
+                onClick={() => {
+                  if (socket) {
+                    socket.emit("joinchatroom", data.chatroomid);
+                    setCurrentchatroom(data.chatroomid);
+                    setMode(2);
+                  } else {
+                    alert("Create Client first");
+                  }
+                }}
+                className="bg-lime-300 px-4 py-2 rounded-xl"
+              >
+                Join
+              </button>
+            </div>
           ))}
-          <button
-            onClick={() => {
-              if (socket) {
-                socket.emit("joinchatroom", data.chatroomid);
-              } else {
-                alert("Create Client first");
-              }
-            }}
-            className="bg-lime-300 px-4 py-2 rounded-xl"
-          >
-            Join
-          </button>
+        </>
+      )}
+      {mode === 2 && (
+        <>
+          <div>Chatroom na</div>
           <form onSubmit={Createmes}>
             <input
               id="chatmessage"
@@ -131,32 +153,34 @@ export default function Home() {
             <input
               className="hidden"
               id="chatroomid"
-              value={data.chatroomid}
+              value={currentChatroom}
             ></input>
             <button className="px-4 py-2 bg-pink-200">Send</button>
           </form>
-
-          <button className="bg-red-300 px-4 py-2 rounded-xl"
+          <h1>Message In Chatroom</h1>
+          {currentmessage?.map((data, index) => (
+            <div key={data}>
+              <li>
+                {data.sender}: {data.newmessage}
+              </li>
+            </div>
+          ))}
+          <button
+            className="bg-red-300 px-4 py-2 rounded-xl"
             onClick={() => {
               if (socket) {
-                socket.emit("leaveroom", data.chatroomid);
+                socket.emit("leaveroom", currentChatroom);
+                setCurrentmessage([]);
+                setMode(1);
               } else {
                 alert("Create Client first");
               }
-            }}>
+            }}
+          >
             Leave
           </button>
-        </div>
-      ))}
-
-      <h1>Message In Chatroom</h1>
-      {currentmessage?.map((data, index) => (
-        <div key={data}>
-          <li>
-            {data.sender}: {data.newmessage}
-          </li>
-        </div>
-      ))}
+        </>
+      )}
     </>
   );
 }
