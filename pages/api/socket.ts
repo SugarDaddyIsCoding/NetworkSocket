@@ -95,6 +95,16 @@ export default function SocketHandler(req, res) {
       update();
     });
 
+    socket.on("sendmessage", (messagedata) => {
+      const currentclient = onlineClients.get(socket.id);
+      const tosend = {
+        newmessage: messagedata.newmessage,
+        sender: currentclient.username,
+      };
+
+      io.in(messagedata.chatroomid).emit("boardcastmessage", tosend);
+    });
+
     socket.on("disconnect", () => {
       console.log("delete: ", socket.id);
       onlineClients.delete(socket.id); //remove disconnected client

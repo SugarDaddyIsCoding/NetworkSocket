@@ -19,6 +19,8 @@ export default function Home() {
   const [onlineUser, setOnlineUser] = useState();
   const [onlineChat, setOnlineChat] = useState();
 
+  const [currentmessage, setCurrentmessage] = useState([]);
+
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
     const g = await fetch("/api/socket");
@@ -33,6 +35,12 @@ export default function Home() {
       setOnlineUser(num.clients);
       setOnlineChat(num.chatroom);
     });
+
+    socket.on("boardcastmessage", (tosend) => {
+      console.log("incoming", tosend);
+
+      setCurrentmessage((prevMessages) => [...prevMessages, tosend]);
+    });
   };
 
   const Createuser = async (event) => {
@@ -41,6 +49,22 @@ export default function Home() {
     const newusername = event.target.setusername.value;
     console.log(newusername);
     socket.emit("setusername", newusername);
+  };
+
+  const Createmes = async (event) => {
+    event.preventDefault();
+    const messagedata = {
+      newmessage: event.target.chatmessage.value,
+      chatroomid: event.target.chatroomid.value,
+    };
+    console.log(messagedata);
+    if (socket) {
+      console.log("send!!");
+      socket.emit("sendmessage", messagedata);
+    } else {
+      console.log("no socket");
+    }
+    event.target.chatmessage.value = "";
   };
 
   return (
@@ -99,6 +123,27 @@ export default function Home() {
           >
             Join
           </button>
+          <form onSubmit={Createmes}>
+            <input
+              id="chatmessage"
+              className="px-4 py-2 bg-yellow-100 border-blue-600"
+            />
+            <input
+              className="hidden"
+              id="chatroomid"
+              value={data.chatroomid}
+            ></input>
+            <button className="px-4 py-2 bg-pink-200">Send</button>
+          </form>
+        </div>
+      ))}
+
+      <h1>Message In Chatroom</h1>
+      {currentmessage?.map((data, index) => (
+        <div key={data}>
+          <li>
+            {data.sender}: {data.newmessage}
+          </li>
         </div>
       ))}
     </>
