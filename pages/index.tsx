@@ -71,34 +71,43 @@ export default function Home() {
 
   return (
     <>
-      <h1 className="text-4xl">Currently Online User: {onlineUser?.length}</h1>
       {mode === 0 && (
-        <>
-          <form onSubmit={Createuser}>
-            <label>Set Nickname</label>
-            <input
-              id="setusername"
-              className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
-            ></input>
-            <button className="px-4 border-red-500 bg-blue-200  py-2">
-              GO
-            </button>
-          </form>
-        </>
+        <div className="flex items-center justify-center w-screen h-screen">
+          <div>
+            <h1 className="text-white text-4xl mb-5 flex justify-center items-center">
+              I want it that way{" "}
+            </h1>
+            <form onSubmit={Createuser}>
+              <label className="text-white">Set Nickname</label>
+              <input
+                id="setusername"
+                className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
+              ></input>
+              <button className="px-4 border-red-500 bg-blue-200  py-2">
+                GO
+              </button>
+            </form>
+          </div>
+        </div>
       )}
       {mode === 1 && (
-        <>
-          {onlineUser?.map((data, index) => (
-            <div key={index}>
-              <span className="bg-red-200">Socket ID:{data.id}</span>
-              <span className="bg-yellow-200">Username: {data.username}</span>
-              {data?.joinedroom?.map((data, index) => (
-                <div key={index}>Chatroom ID: {data}</div>
-              ))}
-            </div>
-          ))}
+        <div className="m-5 ">
+          <h1 className="text-4xl flex justify-center text-white">
+            Currently Online User: {onlineUser?.length}
+          </h1>
+          <div className="bg-white bg-opacity-30 mt-5 py-5 rounded-lg">
+            {onlineUser?.map((data, index) => (
+              <div key={index}>
+                <span className="bg-red-200">Socket ID:{data.id}</span>
+                <span className="bg-yellow-200">Username: {data.username}</span>
+                {data?.joinedroom?.map((data, index) => (
+                  <div key={index}>Chatroom ID: {data}</div>
+                ))}
+              </div>
+            ))}
+          </div>
 
-          <div className="bg-slate-100">
+          <div className="">
             <button
               onClick={() => {
                 if (socket) {
@@ -110,45 +119,73 @@ export default function Home() {
                   alert("Create Client first");
                 }
               }}
-              className="px-4 border-red-500 bg-blue-200  py-2"
+              className="px-4 rounded-xl border-red-500 bg-blue-200  py-2"
             >
               Create and join chatroom
             </button>
           </div>
-          <h1>List Of Available Chatroom</h1>
-          {onlineChat?.map((data, index) => (
-            <div key={index}>
-              <div>
-                Chatroom ID: {data.chatroomid} with size {data.member.length}
-              </div>
-              {data?.member?.map((data, index) => (
-                <div key={index}>Member Socket ID: {data}</div>
-              ))}
-              <button
-                onClick={() => {
-                  if (socket) {
-                    socket.emit("joinchatroom", data.chatroomid);
-                    setCurrentchatroom(data.chatroomid);
-                    setMode(2);
-                  } else {
-                    alert("Create Client first");
-                  }
-                }}
-                className="bg-lime-300 px-4 py-2 rounded-xl"
+          <h1 className="text-white text-2xl justify-center flex">
+            List Of Available Chatroom
+          </h1>
+          <div className="grid mt-5 grid-cols-3 gap-5">
+            {onlineChat?.map((data, index) => (
+              <div
+                className="bg-violet-900 bg-opacity-60 p-5 rounded-xl text-white"
+                key={index}
               >
-                Join
-              </button>
-            </div>
-          ))}
-        </>
+                <div>
+                  Chatroom ID: {data.chatroomid} with size {data.member.length}
+                </div>
+                {data?.member?.map((data, index) => (
+                  <div key={index}>Member Socket ID: {data}</div>
+                ))}
+                <div className="flex mt-5 justify-center items-end">
+                  <button
+                    onClick={() => {
+                      if (socket) {
+                        socket.emit("joinchatroom", data.chatroomid);
+                        setCurrentchatroom(data.chatroomid);
+                        setMode(2);
+                      } else {
+                        alert("Create Client first");
+                      }
+                    }}
+                    className=" bg-sky-800 px-4 py-2 rounded-xl"
+                  >
+                    Join
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
       {mode === 2 && (
         <>
-          <div>Chatroom na</div>
-          <form onSubmit={Createmes}>
+          <div className="mt-5  relative  text-white">
+            <button
+              className="bg-red-900 absolute top-0  px-4 py-2 rounded-xl"
+              onClick={() => {
+                if (socket) {
+                  socket.emit("leaveroom", currentChatroom);
+                  setCurrentmessage([]);
+                  setMode(1);
+                } else {
+                  alert("Create Client first");
+                }
+              }}
+            >
+              Leave
+            </button>
+
+            <h1 className="flex justify-center items-center text-4xl  ">
+              Chatroom ID: {currentChatroom}
+            </h1>
+          </div>
+          <form className="flex justify-center mt-5" onSubmit={Createmes}>
             <input
               id="chatmessage"
-              className="px-4 py-2 bg-yellow-100 border-blue-600"
+              className="px-4 py-2 w-[60%] bg-white bg-opacity-70 "
             />
             <input
               className="hidden"
@@ -157,28 +194,19 @@ export default function Home() {
             ></input>
             <button className="px-4 py-2 bg-pink-200">Send</button>
           </form>
-          <h1>Message In Chatroom</h1>
-          {currentmessage?.map((data, index) => (
-            <div key={data}>
-              <li>
+          <h1 className="text-white mt-3 text-2xl flex justify-center">
+            Message In Chatroom
+          </h1>
+          <div className="mt-5">
+            {currentmessage?.map((data, index) => (
+              <div
+                className="bg-white bg-opacity-80 w-auto py-1 px-2"
+                key={data}
+              >
                 {data.sender}: {data.newmessage}
-              </li>
-            </div>
-          ))}
-          <button
-            className="bg-red-300 px-4 py-2 rounded-xl"
-            onClick={() => {
-              if (socket) {
-                socket.emit("leaveroom", currentChatroom);
-                setCurrentmessage([]);
-                setMode(1);
-              } else {
-                alert("Create Client first");
-              }
-            }}
-          >
-            Leave
-          </button>
+              </div>
+            ))}
+          </div>
         </>
       )}
     </>
