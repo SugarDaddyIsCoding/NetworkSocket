@@ -1,3 +1,4 @@
+import { SocketEvents } from "@/types/events";
 import { Server } from "socket.io";
 let startchatroomid = 0; //global variable for chatroom id
 const onlineClients = new Map(); // create a new Map to store client data
@@ -30,7 +31,7 @@ export default function SocketHandler(req, res) {
     // send an "update" event to all clients with the number of online clients
     update();
 
-    socket.on("setusername", (msg) => {
+    socket.on(SocketEvents.SetUserName, (msg) => {
       //Set username
       if (msg !== "") {
         onlineClients.set(socket.id, {
@@ -49,7 +50,7 @@ export default function SocketHandler(req, res) {
       update();
     });
 
-    socket.on("createchatroom", (callback) => {
+    socket.on(SocketEvents.CreateChatroom, (callback) => {
       //create new chatroom and put that client into the new created chatroom
       socket.join(startchatroomid.toString());
       const existingUser = onlineClients.get(socket.id);
@@ -75,7 +76,7 @@ export default function SocketHandler(req, res) {
       startchatroomid++; //make this is unique
     });
 
-    socket.on("joinchatroom", (chatroomid) => {
+    socket.on(SocketEvents.JoinChatroom, (chatroomid) => {
       const currentChatroom = onlineChatroom.get(chatroomid);
       //Like create chatroom but join instead, use the chatroom id passed from frontend
       if (currentChatroom.member.includes(socket.id)) {
@@ -103,7 +104,7 @@ export default function SocketHandler(req, res) {
       console.log(socket.id, "successfully joined room", chatroomid);
     });
 
-    socket.on("leaveroom", (chatroomid) => {
+    socket.on(SocketEvents.LeaveRoom, (chatroomid) => {
       const currentChatroom = onlineChatroom.get(chatroomid);
       //Like create chatroom but leave instead, use the chatroom id passed from frontend
       if (!currentChatroom.member.includes(socket.id)) {
@@ -136,7 +137,7 @@ export default function SocketHandler(req, res) {
       console.log(socket.id, "successfully leave room", chatroomid);
     });
 
-    socket.on("sendmessage", (messagedata) => {
+    socket.on(SocketEvents.SendMessage, (messagedata) => {
       //need to check if that user is in that chatroom
 
       const currentclient = onlineClients.get(socket.id);
@@ -146,7 +147,7 @@ export default function SocketHandler(req, res) {
           sender: currentclient.username,
         };
 
-        io.in(messagedata.chatroomid).emit("boardcastmessage", tosend);
+        io.in(messagedata.chatroomid).emit(SocketEvents.BroadCastMessage, tosend);
       } else {
         console.log("can't send not in this chatroom");
       }
@@ -154,7 +155,7 @@ export default function SocketHandler(req, res) {
 
     
 
-    socket.on("typing", () => {
+    socket.on(SocketEvents.Typing, () => {
 
       // delete countdown timer if any
       const me: string  = socket.id;
@@ -170,7 +171,7 @@ export default function SocketHandler(req, res) {
       console.log(typingUsers);
 
       // emit an updateTypers event to client
-      io.emit("updateTypingUsers", {
+      io.emit(SocketEvents.UpdateTypingUsers, {
         typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username])
       });
 
@@ -184,7 +185,7 @@ export default function SocketHandler(req, res) {
         return () => {
           console.log("typing timeout for ", me);
           typingUsers = typingUsers.filter(userId => userId!==me)
-          io.emit("updateTypingUsers", {
+          io.emit(SocketEvents.UpdateTypingUsers, {
             typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
           });
         }
@@ -210,7 +211,7 @@ export default function SocketHandler(req, res) {
 
   //This f(x) use to update the new data and make every client see the same set of data
   const update = () => {
-    io.emit("update", {
+    io.emit(SocketEvents.UpdateRoomsAndUsers, {
       online: onlineClients.size,
       clients: [...onlineClients.values()],
       chatroom: [...onlineChatroom.values()],

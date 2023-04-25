@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import io from "socket.io-client";
 import { useState, useEffect } from "react";
+import { SocketEvents } from "@/types/events";
 
 let socket;
 
@@ -32,20 +33,20 @@ export default function Home() {
 
     socket = io();
     //everytime server send new data, all the client update state
-    socket.on("update", (num) => {
+    socket.on(SocketEvents.UpdateRoomsAndUsers, (num) => {
       console.log("uso janai", num);
       console.log(num.clients.length);
       setOnlineUser(num.clients);
       setOnlineChat(num.chatroom);
     });
 
-    socket.on("boardcastmessage", (tosend) => {
+    socket.on(SocketEvents.BroadCastMessage, (tosend) => {
       console.log("incoming", tosend);
 
       setCurrentmessage((prevMessages) => [...prevMessages, tosend]);
     });
 
-    socket.on("updateTypingUsers", ({ typingUsers }) => {
+    socket.on(SocketEvents.UpdateTypingUsers, ({ typingUsers }) => {
       setTypingUsers(
         typingUsers
           .filter((u) => u[0] !== socket.id)
@@ -60,7 +61,7 @@ export default function Home() {
     await socketInitializer(); //init new user everytime u click create username button
     const newusername = event.target.setusername.value;
     console.log(newusername);
-    socket.emit("setusername", newusername);
+    socket.emit(SocketEvents.SetUserName, newusername);
     setMode(1);
     setMeName(newusername);
   };
@@ -74,7 +75,7 @@ export default function Home() {
     console.log(messagedata);
     if (socket) {
       console.log("send!!");
-      socket.emit("sendmessage", messagedata);
+      socket.emit(SocketEvents.SendMessage, messagedata);
     } else {
       console.log("no socket");
     }
@@ -124,7 +125,7 @@ export default function Home() {
             <button
               onClick={() => {
                 if (socket) {
-                  socket.emit("createchatroom", (response) => {
+                  socket.emit(SocketEvents.CreateChatroom, (response) => {
                     setCurrentchatroom(response.socketid);
                     setMode(2);
                   });
@@ -156,7 +157,7 @@ export default function Home() {
                   <button
                     onClick={() => {
                       if (socket) {
-                        socket.emit("joinchatroom", data.chatroomid);
+                        socket.emit(SocketEvents.JoinChatroom, data.chatroomid);
                         setCurrentchatroom(data.chatroomid);
                         setMode(2);
                       } else {
@@ -180,7 +181,7 @@ export default function Home() {
               className="bg-red-900 absolute top-0  px-4 py-2 rounded-xl"
               onClick={() => {
                 if (socket) {
-                  socket.emit("leaveroom", currentChatroom);
+                  socket.emit(SocketEvents.LeaveRoom, currentChatroom);
                   setCurrentmessage([]);
                   setMode(1);
                 } else {
@@ -204,7 +205,7 @@ export default function Home() {
                 id="chatmessage"
                 className="px-4 py-2 w-full bg-white bg-opacity-70 "
                 onChange={() => {
-                  socket.emit("typing");
+                  socket.emit(SocketEvents.Typing);
                 }}
               />
               <input
