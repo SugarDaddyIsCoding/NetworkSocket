@@ -99,6 +99,17 @@ export default function Home() {
           >
             Join
           </button>
+
+          <button className="bg-red-300 px-4 py-2 rounded-xl"
+            onClick={() => {
+              if (socket) {
+                socket.emit("leaveroom", data.chatroomid);
+              } else {
+                alert("Create Client first");
+              }
+            }}>
+            Leave
+          </button>
         </div>
       ))}
     </>

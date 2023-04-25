@@ -93,6 +93,41 @@ export default function SocketHandler(req, res) {
       });
 
       update();
+      console.log(socket.id, "successfully joined room", chatroomid);
+    });
+
+    socket.on("leaveroom", (chatroomid) => {
+      const currentChatroom = onlineChatroom.get(chatroomid);
+      //Like create chatroom but leave instead, use the chatroom id passed from frontend
+      if (!currentChatroom.member.includes(socket.id)) {
+        //if not in that chatroom, can't leave
+        console.log("not in the chatroom!");
+        return;
+      }
+      socket.leave(chatroomid);
+
+      const me = onlineClients.get(socket.id);
+
+      // remove the room from my joined rooms
+      let myrooms: Array<string> = me.joinedroom;
+      myrooms = myrooms.filter(roomId => roomId !== chatroomid);
+
+      // update the state in onlineClients
+      onlineClients.set(socket.id, { ...me, joinedroom: myrooms });
+
+
+      // remove me from the currentChatroom
+      let newmember: Array<string> = currentChatroom.member;
+      newmember = newmember.filter(member => member !== socket.id);
+
+      // update the state of onlineChatroom
+      onlineChatroom.set(chatroomid, {
+        ...currentChatroom,
+        member: newmember,
+      });
+
+      update();
+      console.log(socket.id, "successfully leave room", chatroomid);
     });
 
     socket.on("disconnect", () => {
