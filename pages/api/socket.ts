@@ -110,15 +110,14 @@ export default function SocketHandler(req, res) {
 
       // remove the room from my joined rooms
       let myrooms: Array<string> = me.joinedroom;
-      myrooms = myrooms.filter(roomId => roomId !== chatroomid);
+      myrooms = myrooms.filter((roomId) => roomId !== chatroomid);
 
       // update the state in onlineClients
       onlineClients.set(socket.id, { ...me, joinedroom: myrooms });
 
-
       // remove me from the currentChatroom
       let newmember: Array<string> = currentChatroom.member;
-      newmember = newmember.filter(member => member !== socket.id);
+      newmember = newmember.filter((member) => member !== socket.id);
 
       // update the state of onlineChatroom
       onlineChatroom.set(chatroomid, {
@@ -131,13 +130,19 @@ export default function SocketHandler(req, res) {
     });
 
     socket.on("sendmessage", (messagedata) => {
-      const currentclient = onlineClients.get(socket.id);
-      const tosend = {
-        newmessage: messagedata.newmessage,
-        sender: currentclient.username,
-      };
+      //need to check if that user is in that chatroom
 
-      io.in(messagedata.chatroomid).emit("boardcastmessage", tosend);
+      const currentclient = onlineClients.get(socket.id);
+      if (currentclient.joinedroom.includes(messagedata.chatroomid)) {
+        const tosend = {
+          newmessage: messagedata.newmessage,
+          sender: currentclient.username,
+        };
+
+        io.in(messagedata.chatroomid).emit("boardcastmessage", tosend);
+      } else {
+        console.log("can't send not in this chatroom");
+      }
     });
 
     socket.on("disconnect", () => {
