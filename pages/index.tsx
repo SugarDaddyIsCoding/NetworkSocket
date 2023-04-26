@@ -24,6 +24,7 @@ export default function Home() {
   const [currentmessage, setCurrentmessage] = useState([]);
   const [typingUsers, setTypingUsers] = useState<string>("");
   const [meName, setMeName] = useState<string | null>(null);
+  const [theme, setTheme] = useState(true); //true = dark mode
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
