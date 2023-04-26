@@ -21,6 +21,7 @@ export default function Home() {
   const [mode, setMode] = useState(0);
   const [currentChatroom, setCurrentchatroom] = useState();
   const [currentmessage, setCurrentmessage] = useState([]);
+  const [theme, setTheme] = useState(true); //true = dark mode
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -70,20 +71,39 @@ export default function Home() {
   };
 
   return (
-    <>
+    <div
+      className={
+        theme
+          ? " bg-slate-950 text-white w-screen h-screen relative"
+          : " bg-white text-black w-screen h-screen relative"
+      }
+    >
+      <button
+        onClick={() => {
+          setTheme(!theme);
+          console.log(theme);
+        }}
+        className="px-4 absolute top-2 z-10 right-0 py-2 bg-yellow-400"
+      >
+        Change Mode
+      </button>
       {mode === 0 && (
-        <div className="flex items-center justify-center w-screen h-screen">
+        <div className="flex pt-5 items-center justify-center ">
           <div>
-            <h1 className="text-white text-4xl mb-5 flex justify-center items-center">
+            <h1 className="text-4xl mb-5 flex justify-center items-center">
               I want it that way{" "}
             </h1>
             <form onSubmit={Createuser}>
-              <label className="text-white">Set Nickname</label>
+              <label className="">Set Nickname</label>
               <input
                 id="setusername"
-                className="border-red-300 py-2 px-4 bg-slate-100 rounded m-3"
+                className={
+                  theme
+                    ? "border-red-300 bg-slate-600 py-2 px-4 rounded m-3"
+                    : "border-red-300 bg-slate-200 py-2 px-4 rounded m-3"
+                }
               ></input>
-              <button className="px-4 border-red-500 bg-blue-200  py-2">
+              <button className="px-4 border-red-500 bg-blue-500  py-2">
                 GO
               </button>
             </form>
@@ -91,11 +111,11 @@ export default function Home() {
         </div>
       )}
       {mode === 1 && (
-        <div className="m-5 ">
-          <h1 className="text-4xl flex justify-center text-white">
+        <div className="p-5 ">
+          <h1 className="text-4xl flex justify-center ">
             Currently Online User: {onlineUser?.length}
           </h1>
-          <div className="bg-white bg-opacity-30 mt-5 py-5 rounded-lg">
+          <div className="bg-slate-300 text-black bg-opacity-30 mt-5 py-5 rounded-lg">
             {onlineUser?.map((data, index) => (
               <div key={index}>
                 <span className="bg-red-200">Socket ID:{data.id}</span>
@@ -119,18 +139,18 @@ export default function Home() {
                   alert("Create Client first");
                 }
               }}
-              className="px-4 rounded-xl border-red-500 bg-blue-200  py-2"
+              className="px-4 rounded-xl border-red-500 bg-blue-600  py-2"
             >
               Create and join chatroom
             </button>
           </div>
-          <h1 className="text-white text-2xl justify-center flex">
+          <h1 className=" text-2xl justify-center flex">
             List Of Available Chatroom
           </h1>
           <div className="grid mt-5 grid-cols-3 gap-5">
             {onlineChat?.map((data, index) => (
               <div
-                className="bg-violet-900 bg-opacity-60 p-5 rounded-xl text-white"
+                className="bg-violet-500 bg-opacity-60 p-5 rounded-xl"
                 key={index}
               >
                 <div>
@@ -150,7 +170,7 @@ export default function Home() {
                         alert("Create Client first");
                       }
                     }}
-                    className=" bg-sky-800 px-4 py-2 rounded-xl"
+                    className=" bg-sky-500 px-4 py-2 rounded-xl"
                   >
                     Join
                   </button>
@@ -162,9 +182,9 @@ export default function Home() {
       )}
       {mode === 2 && (
         <>
-          <div className="mt-5  relative  text-white">
+          <div className="pt-5  relative ">
             <button
-              className="bg-red-900 absolute top-0  px-4 py-2 rounded-xl"
+              className="bg-red-500 absolute top-5  px-4 py-2 rounded-xl"
               onClick={() => {
                 if (socket) {
                   socket.emit("leaveroom", currentChatroom);
@@ -185,30 +205,35 @@ export default function Home() {
           <form className="flex justify-center mt-5" onSubmit={Createmes}>
             <input
               id="chatmessage"
-              className="px-4 py-2 w-[60%] bg-white bg-opacity-70 "
+              className={
+                theme
+                  ? "px-4 py-2 w-[60%] bg-white bg-opacity-50 "
+                  : "px-4 py-2 w-[60%] bg-black bg-opacity-20 "
+              }
             />
             <input
               className="hidden"
               id="chatroomid"
               value={currentChatroom}
             ></input>
-            <button className="px-4 py-2 bg-pink-200">Send</button>
+            <button className="px-4 py-2 bg-pink-400">Send</button>
           </form>
-          <h1 className="text-white mt-3 text-2xl flex justify-center">
+          <h1 className="mt-3 text-2xl flex justify-center">
             Message In Chatroom
           </h1>
-          <div className="mt-5">
+          <div className="mt-5 mx-10">
             {currentmessage?.map((data, index) => (
               <div
-                className="bg-white bg-opacity-80 w-auto py-1 px-2"
+                className=" bg-opacity-80 bg-green-500 w-auto py-1 px-2"
                 key={data}
               >
-                {data.sender}: {data.newmessage}
+                <span className="bg-blue-400 px-2 py-1">{data.sender}</span>:{" "}
+                {data.newmessage}
               </div>
             ))}
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
