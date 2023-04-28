@@ -97,7 +97,8 @@ export default function Home() {
         setShow(false);
       });
     } else {
-      alert("Create Client first");
+      alert("create client first");
+      setMode(0);
     }
   };
 
@@ -487,7 +488,8 @@ export default function Home() {
                         setCurrentRoomname(data.roomName);
                         setMode(2);
                       } else {
-                        alert("Create Client first");
+                        alert("create client first");
+                        setMode(0);
                       }
                     }}
                     className=" bg-sky-500 px-4 py-2 rounded-xl"
@@ -517,7 +519,8 @@ export default function Home() {
                   setCurrentmessage([]);
                   setMode(1);
                 } else {
-                  alert("Create Client first");
+                  alert("create client first");
+                  setMode(0);
                 }
               }}
             >
