@@ -11,6 +11,7 @@ import {
   colors,
   animals,
 } from "unique-names-generator";
+import { runCleanup } from "./api/socket";
 let socket;
 
 export default function Home() {
@@ -579,4 +580,17 @@ export default function Home() {
       )}
     </div>
   );
+}
+
+export async function getServerSideProps() {
+
+  // check if the cleanup loop is already initialized or not
+  // so that only 1 user will trigger the cleanup loop
+  if (!cleanupInit) {
+    cleanupInit = true;
+    runCleanup();
+  }
+  return {
+    props: {}, // will be passed to the page component as props
+  }
 }

@@ -1,8 +1,6 @@
+import { onlineChatroomT, onlineChatroom, getNewServerIO, onlineClients } from "@/share/context";
 import { SocketEvents } from "@/types/events";
 import { Server } from "socket.io";
-let startchatroomid = 0; //global variable for chatroom id
-const onlineClients = new Map(); // create a new Map to store client data
-const onlineChatroom = new Map<string, { chatroomid: string, member: string[], roomName: string }>(); //Create a  new map to save a chatroom and all the client in each on
 
 // variables for "is typing" function
 let userTimers = new Map<string, NodeJS.Timeout | undefined>();
@@ -12,12 +10,12 @@ const typingTimeout = 5000;
 export default function SocketHandler(req, res) {
   // It means that socket server was already initialised
   if (res.socket.server.io) {
-    console.log("Already set up");
+    //console.log("Already set up");
     res.end();
     return;
   }
 
-  const io = new Server(res.socket.server);
+  const io = getNewServerIO(res.socket.server);
   res.socket.server.io = io;
 
   const onConnection = (socket) => {
@@ -29,7 +27,7 @@ export default function SocketHandler(req, res) {
     });
 
     // send an "update" event to all clients with the number of online clients
-    update();
+    update(io);
 
     socket.on(SocketEvents.SetUserName, (msg) => {
       //Set username
@@ -47,7 +45,7 @@ export default function SocketHandler(req, res) {
         });
       }
       //after set username uodate to every client
-      update();
+      update(io);
     });
 
     socket.on(SocketEvents.CreateChatroom, (roomName, callback) => {
@@ -57,7 +55,7 @@ export default function SocketHandler(req, res) {
 
       const newroom: Array<string> = existingUser.joinedroom;
       newroom.push(startchatroomid.toString());
-      //console.log(newroom);
+      //console.lognewroom);
       onlineClients.set(socket.id, { ...existingUser, joinedroom: newroom });
 
       onlineChatroom.set(startchatroomid.toString(), {
@@ -66,12 +64,14 @@ export default function SocketHandler(req, res) {
         roomName,
       });
 
+      //console.log("in socket.io handler");
       //console.log(onlineChatroom);
+      //console.log("****************");
 
-      update(); //reupdate after created chatroom
-      //console.log(onlineClients.values());
+      update(io); //reupdate after created chatroom
+      //console.logonlineClients.values());
 
-      console.log("joined!!");
+      //console.log("joined!!");
       callback({ socketid: startchatroomid.toString(), roomName });
 
       startchatroomid++; //make this is unique
@@ -80,14 +80,14 @@ export default function SocketHandler(req, res) {
     socket.on(SocketEvents.JoinChatroom, (chatroomid) => {
       const currentChatroom = onlineChatroom.get(chatroomid);
       if (currentChatroom === undefined) {
-        console.log("undefined chat room");
+        //console.log("undefined chat room");
         return;
       }
 
       //Like create chatroom but join instead, use the chatroom id passed from frontend
       if (currentChatroom.member.includes(socket.id)) {
         //if already in that chatroom, don't join
-        console.log("already in this chatroom!");
+        //console.log("already in this chatroom!");
         return;
       }
       socket.join(chatroomid);
@@ -96,7 +96,7 @@ export default function SocketHandler(req, res) {
 
       const newroom: Array<string> = existingUser.joinedroom;
       newroom.push(chatroomid);
-      //console.log(newroom);
+      //console.lognewroom);
       onlineClients.set(socket.id, { ...existingUser, joinedroom: newroom });
 
       const newmember: Array<string> = currentChatroom.member;
@@ -106,8 +106,8 @@ export default function SocketHandler(req, res) {
         member: newmember,
       });
 
-      update();
-      console.log(socket.id, "successfully joined room", chatroomid);
+      update(io);
+      //console.log(socket.id, "successfully joined room", chatroomid);
     });
 
     socket.on(SocketEvents.LeaveRoom, (chatroomid) => {
@@ -119,7 +119,7 @@ export default function SocketHandler(req, res) {
       //Like create chatroom but leave instead, use the chatroom id passed from frontend
       if (!currentChatroom.member.includes(socket.id)) {
         //if not in that chatroom, can't leave
-        console.log("not in the chatroom!");
+        //console.log("not in the chatroom!");
         return;
       }
       socket.leave(chatroomid);
@@ -143,7 +143,7 @@ export default function SocketHandler(req, res) {
         member: newmember,
       });
 
-      update();
+      update(io);
 
       //remove him from the typingUsers List
       typingUsers = typingUsers.filter(userId => userId !== socket.id)
@@ -151,7 +151,7 @@ export default function SocketHandler(req, res) {
         typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
       });
 
-      console.log(socket.id, "successfully leave room", chatroomid);
+      //console.log(socket.id, "successfully leave room", chatroomid);
     });
 
     socket.on(SocketEvents.SendMessage, (messagedata) => {
@@ -172,7 +172,7 @@ export default function SocketHandler(req, res) {
 
         io.in(messagedata.chatroomid).emit(SocketEvents.BroadCastMessage, tosend);
       } else {
-        console.log("can't send not in this chatroom");
+        //console.log("can't send not in this chatroom");
       }
     });
 
@@ -190,8 +190,8 @@ export default function SocketHandler(req, res) {
         typingUsers.push(me);
       }
 
-      console.log("typingUsers");
-      console.log(typingUsers);
+      //console.log("typingUsers");
+      //console.log(typingUsers);
 
       // emit an updateTypers event to client
       io.emit(SocketEvents.UpdateTypingUsers, {
@@ -204,9 +204,14 @@ export default function SocketHandler(req, res) {
       // do - remove him from the list typingUsers
       // do - remove the timer from userTimers (not sure)
       // emit an updateTypers event to client
+      //
+      // In this code, setTimeout() is called with an anonymous function that returns another function. 
+      // This allows us to pass additional parameters (me) to the function that will be used after the delay.
+      //
+      // so even though me would change later, the current me that is passed when setTimeout is called will be used.
       let timerId = setTimeout(((me: string): (() => void) => {
         return () => {
-          console.log("typing timeout for ", me);
+          //console.log("typing timeout for ", me);
           typingUsers = typingUsers.filter(userId => userId !== me)
           io.emit(SocketEvents.UpdateTypingUsers, {
             typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
@@ -219,7 +224,7 @@ export default function SocketHandler(req, res) {
     })
 
     socket.on("disconnect", () => {
-      console.log("delete: ", socket.id);
+      //console.log("delete: ", socket.id);
       onlineClients.delete(socket.id); //remove disconnected client
 
       // remove them from any group chats
@@ -229,10 +234,10 @@ export default function SocketHandler(req, res) {
         }
       });
 
-      update();
+      update(io);
       // send an "update" event to all clients with the updated online client data
 
-      console.log("Disconnected!!", onlineClients.size);
+      //console.log("Disconnected!!", onlineClients.size);
       // Get a list of all active sockets
 
 
@@ -246,17 +251,61 @@ export default function SocketHandler(req, res) {
     //reuse function
   };
 
-  //This f(x) use to update the new data and make every client see the same set of data
-  const update = () => {
-    io.emit(SocketEvents.UpdateRoomsAndUsers, {
-      online: onlineClients.size,
-      clients: [...onlineClients.values()],
-      chatroom: [...onlineChatroom.values()],
-    });
-  };
-
   io.on("connection", onConnection); //auto
 
-  console.log("Setting up socket with ");
+  //console.log("Setting up socket with ");
   res.end();
+}
+
+
+//This f(x) use to update the new data and make every client see the same set of data
+const update = (ioInstance: Server) => {
+  console.log("emitting updates");
+  ioInstance.emit(SocketEvents.UpdateRoomsAndUsers, {
+    online: onlineClients.size,
+    clients: [...onlineClients.values()],
+    chatroom: [...onlineChatroom.values()],
+  });
+};
+
+// runner for cleanup function
+export const runCleanup = () => {
+  // //console.log("in run cleanup");
+  // //console.log(onlineChatroom);
+  cleanup(onlineChatroom);
+  const nextTimeout = parseInt(process.env.EMPTYROOM_CLEANUP_INTERVAL as string) * 1000;
+  console.log(nextTimeout);
+  setTimeout(runCleanup, nextTimeout);
+
+  const currentTime = new Date().getTime(); // Get the current time in milliseconds
+  const oneMinuteLater = new Date(); // Create a new Date object
+  oneMinuteLater.setTime(currentTime + nextTimeout); // Set the time of the new Date object to nextTimeout milliseconds later
+  const hours = oneMinuteLater.getHours().toString().padStart(2, '0'); // Get the hours and pad with leading zero if necessary
+  const minutes = oneMinuteLater.getMinutes().toString().padStart(2, '0'); // Get the minutes and pad with leading zero if necessary
+  const seconds = oneMinuteLater.getSeconds().toString().padStart(2, '0'); // Get the seconds and pad with leading zero if necessary
+  const timeString = `${hours}:${minutes}:${seconds}`; // Create the time string in hh:mm:ss format
+  console.log("next clean up at", timeString);
+};
+
+// cleanup function that will remove any empty chat room
+const cleanup = (onlineRooms: onlineChatroomT) => {
+
+  // //console.log(onlineRooms);
+
+  let removingId: string[] = [];
+  onlineRooms.forEach((room, roomId) => {
+    if (room.member.length === 0) {
+      removingId.push(roomId);
+    }
+  });
+  removingId.forEach((id) => onlineRooms.delete(id));
+
+  if (removingId.length > 0) {
+    const io = getNewServerIO();
+
+    if (io != undefined) {
+
+      update(io);
+    }
+  }
 }
