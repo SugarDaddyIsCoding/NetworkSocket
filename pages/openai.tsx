@@ -1,5 +1,6 @@
-import { useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useOpenAI } from '@/hooks/useOpenAI'
+import { useInterval } from '@/hooks/useInterval'
 
 export default function Test() {
   // TODO: gather user message history and send to api
@@ -9,8 +10,9 @@ export default function Test() {
   //     content: 'Tell me about Elon Musk',
   //   },
   // ]
+  const [cursor, setCursor] = useState('▋')
 
-  const { messages, message, response, handleChange, handleSubmit } =
+  const { message, response, handleChange, handleSubmit, isStreaming } =
     useOpenAI()
 
   const inputRef = useCallback((node: HTMLInputElement) => {
@@ -19,11 +21,18 @@ export default function Test() {
     }
   }, [])
 
+  useInterval(() => {
+    setCursor((prev) => (prev ? '' : '▋'))
+  }, 500)
+
   return (
-    <div className='flex-center flex-col min-h-screen max-w-xl mx-auto p-8'>
+    <div className='flex-center flex-col min-h-screen max-w-xl mx-auto p-8 text-gray-700'>
       <div className='flex flex-col flex-1 gap-4 w-full'>
         <div className='min-h-[28px] max-w-full pre-wrap'>{message}</div>
-        <div className='min-h-[28px] max-w-full pre-wrap'>{response}</div>
+        <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
+          {response}
+          {isStreaming && cursor}
+        </div>
       </div>
       <form
         className='flex justify-between h-[40px] gap-4 w-full max-w-full'
@@ -33,7 +42,7 @@ export default function Test() {
           ref={inputRef}
           onChange={handleChange}
           value={message}
-          className='border-2 border-gray-400 text-gray-700 rounded-md flex-1 w-0 h-full px-2 blue-glow-focus'
+          className='border-2 border-gray-400 rounded-md flex-1 w-0 h-full px-2 blue-glow-focus'
         />
         <button
           type='submit'

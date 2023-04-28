@@ -73,10 +73,10 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
   }, [isStreaming])
 
   return {
-    messages,
     message,
     response,
     handleChange,
     handleSubmit,
+    isStreaming,
   }
 }
