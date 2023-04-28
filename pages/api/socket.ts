@@ -50,7 +50,7 @@ export default function SocketHandler(req, res) {
       update();
     });
 
-    socket.on(SocketEvents.CreateChatroom, (callback) => {
+    socket.on(SocketEvents.CreateChatroom, (roomName, callback) => {      
       //create new chatroom and put that client into the new created chatroom
       socket.join(startchatroomid.toString());
       const existingUser = onlineClients.get(socket.id);
@@ -63,6 +63,7 @@ export default function SocketHandler(req, res) {
       onlineChatroom.set(startchatroomid.toString(), {
         chatroomid: startchatroomid.toString(),
         member: [socket.id],
+        roomName,
       });
 
       //console.log(onlineChatroom);
@@ -71,7 +72,7 @@ export default function SocketHandler(req, res) {
       //console.log(onlineClients.values());
 
       console.log("joined!!");
-      callback({ socketid: startchatroomid.toString() });
+      callback({ socketid: startchatroomid.toString(), roomName });
 
       startchatroomid++; //make this is unique
     });

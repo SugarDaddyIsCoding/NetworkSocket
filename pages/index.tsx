@@ -3,7 +3,14 @@ import Image from "next/image";
 import io from "socket.io-client";
 import { useState, useEffect } from "react";
 import { SocketEvents } from "@/types/events";
-
+import { Button, Form, Modal } from "react-bootstrap";
+import {
+  uniqueNamesGenerator,
+  Config,
+  adjectives,
+  colors,
+  animals,
+} from "unique-names-generator";
 let socket;
 
 export default function Home() {
@@ -21,11 +28,17 @@ export default function Home() {
   const [onlineChat, setOnlineChat] = useState();
   const [mode, setMode] = useState(0);
   const [currentChatroom, setCurrentchatroom] = useState();
+  const [currentRoomName, setCurrentRoomname] = useState("");
   const [currentmessage, setCurrentmessage] = useState([]);
   const [typingUsers, setTypingUsers] = useState<string>("");
   const [meName, setMeName] = useState<string | null>(null);
   const [theme, setTheme] = useState(true); //true = dark mode
 
+  // states and hook for a create-and-join-room modal
+  const [show, setShow] = useState(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+  const [anim, setAnim] = useState(false);
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
     const g = await fetch("/api/socket");
@@ -55,6 +68,37 @@ export default function Home() {
           .toString()
       );
     });
+  };
+
+  const getrandomRoomName = (): string => {
+    const customConfig: Config = {
+      dictionaries: [adjectives, colors, animals],
+      separator: "-",
+      style: "capital",
+      length: 3,
+    };
+
+    const shortName: string = uniqueNamesGenerator(customConfig); // big-donkey
+    return shortName;
+  };
+
+  const handleCreateAndJoinRoom = async (event) => {
+    event.preventDefault();
+    const roomName =
+      event.target.chatroomNameInput.value === ""
+        ? getrandomRoomName()
+        : event.target.chatroomNameInput.value;
+    console.log(roomName);
+    if (socket) {
+      socket.emit(SocketEvents.CreateChatroom, roomName, (response) => {
+        setCurrentchatroom(response.socketid);
+        setCurrentRoomname(response.roomName);
+        setMode(2);
+        setShow(false);
+      });
+    } else {
+      alert("Create Client first");
+    }
   };
 
   const Createuser = async (event) => {
@@ -140,17 +184,279 @@ export default function Home() {
             ))}
           </div>
 
+          {/* create and join room modal */}
+          {show && (
+            <div
+              id="modal"
+              className={
+                anim
+                  ? "animate-wiggle relative z-10 duration-200 transition-all"
+                  : "relative z-10 duration-200 transition-all"
+              }
+              aria-labelledby="modal-title"
+              role="dialog"
+              aria-modal="true"
+              onAnimationEnd={() => setAnim(false)}
+            >
+              <form id="chatroomname-form" onSubmit={handleCreateAndJoinRoom}>
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+                <div className="fixed inset-0 z-10 overflow-y-auto">
+                  <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                    <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                      <div className="bg-pink-500 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div className="sm:flex sm:items-start">
+                          <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg
+                              viewBox="0 0 100 100"
+                              width="100%"
+                              height="100%"
+                              style={{ overflow: "visible" }}
+                            >
+                              <circle cx="50" cy="50" r="50" fill="transparent">
+                                <animate
+                                  attributeName="fill"
+                                  from="transparent"
+                                  to="#ffc10714"
+                                  dur="1s"
+                                  begin="0s"
+                                  repeatCount="1"
+                                  fill="freeze"
+                                />
+                              </circle>
+
+                              <g>
+                                <line
+                                  x1="0"
+                                  y1="50"
+                                  x2="100"
+                                  y2="50"
+                                  stroke="#795548ad"
+                                  strokeOpacity="0"
+                                  strokeDasharray="4"
+                                >
+                                  <animate
+                                    attributeName="stroke-opacity"
+                                    to="0.8"
+                                    dur="2s"
+                                    begin="0s"
+                                    repeatCount="1"
+                                    fill="freeze"
+                                  />
+                                </line>
+
+                                <circle cx="100" cy="50" r="3" fill="green">
+                                  <animate
+                                    attributeName="cx"
+                                    dur="6s"
+                                    begin="2s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="100;0;100"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                  <animate
+                                    attributeName="cy"
+                                    dur="6s"
+                                    begin="2s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="50;50;50"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                </circle>
+                              </g>
+
+                              <g>
+                                <line
+                                  x1="50"
+                                  y1="0"
+                                  x2="50"
+                                  y2="100"
+                                  stroke="#795548ad"
+                                  strokeOpacity="0"
+                                  strokeDasharray="4"
+                                >
+                                  <animate
+                                    attributeName="stroke-opacity"
+                                    to="0.8"
+                                    dur="2s"
+                                    begin="0s"
+                                    repeatCount="1"
+                                    fill="freeze"
+                                  />
+                                </line>
+
+                                <circle cx="50" cy="100" r="3" fill="red">
+                                  <animate
+                                    attributeName="cx"
+                                    dur="6s"
+                                    begin="6.5s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="50;50;50"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                  <animate
+                                    attributeName="cy"
+                                    dur="6s"
+                                    begin="6.5s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="100;0;100"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                </circle>
+                              </g>
+
+                              <g id="135deg">
+                                <line
+                                  x1="14.64"
+                                  y1="14.64"
+                                  x2="85.35"
+                                  y2="85.35"
+                                  stroke="#795548ad"
+                                  strokeOpacity="0"
+                                  strokeDasharray="4"
+                                >
+                                  <animate
+                                    attributeName="stroke-opacity"
+                                    to="0.8"
+                                    dur="2s"
+                                    begin="0s"
+                                    repeatCount="1"
+                                    fill="freeze"
+                                  />
+                                </line>
+
+                                <circle cx="85.35" cy="85.35" r="3" fill="blue">
+                                  <animate
+                                    attributeName="cx"
+                                    dur="6s"
+                                    begin="7.5s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="85.35;14.64;85.35"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                  <animate
+                                    attributeName="cy"
+                                    dur="6s"
+                                    begin="7.5s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="85.35;14.64;85.35"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                </circle>
+                              </g>
+
+                              <g id="45deg">
+                                <line
+                                  x1="85.35"
+                                  y1="14.64"
+                                  x2="14.64"
+                                  y2="85.35"
+                                  stroke="#795548ad"
+                                  strokeOpacity="0"
+                                  strokeDasharray="4"
+                                >
+                                  <animate
+                                    attributeName="stroke-opacity"
+                                    to="0.8"
+                                    dur="2s"
+                                    begin="0s"
+                                    repeatCount="1"
+                                    fill="freeze"
+                                  />
+                                </line>
+
+                                <circle
+                                  cx="85.35"
+                                  cy="14.64"
+                                  r="3"
+                                  fill="orange"
+                                >
+                                  <animate
+                                    attributeName="cx"
+                                    dur="6s"
+                                    begin="8.5s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="85.35;14.64;85.35"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                  <animate
+                                    attributeName="cy"
+                                    dur="6s"
+                                    begin="8.5s"
+                                    calcMode="spline"
+                                    repeatCount="indefinite"
+                                    values="14.64;85.35;14.64"
+                                    keyTimes="0;0.5;1"
+                                    keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+                                  />
+                                </circle>
+                              </g>
+                            </svg>
+                          </div>
+                          <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-grow">
+                            <h3
+                              className="text-base font-bold leading-6 text-gray-900 text-lg"
+                              id="modal-title"
+                            >
+                              New a chat room
+                            </h3>
+                            <p>{"<"}-cr: codepen.io/maremarismaria</p>
+
+                            <div className="mt-8 mb-4">
+                              <div className="mb-4">
+                                <input
+                                  className="focus:ring-2 focus:ring-yellow-400 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                  id="chatroomNameInput"
+                                  type="text"
+                                  placeholder="room name"
+                                ></input>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button
+                          type="submit"
+                          className="hover:scale-105 inline-flex w-full justify-center rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-800 sm:ml-3 sm:w-auto"
+                        >
+                          Create
+                        </button>
+                        <button
+                          type="button"
+                          className="hover:underline duration-500 mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                          onClick={handleClose}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+          {/* end of create chatroom modal */}
+
           <div className="">
             <button
               onClick={() => {
-                if (socket) {
-                  socket.emit(SocketEvents.CreateChatroom, (response) => {
-                    setCurrentchatroom(response.socketid);
-                    setMode(2);
-                  });
-                } else {
-                  alert("Create Client first");
-                }
+                setAnim(true);
+                handleShow();
               }}
               className="px-4 rounded-xl border-red-500 bg-blue-600  py-2"
             >
@@ -166,18 +472,19 @@ export default function Home() {
                 className="bg-violet-500 bg-opacity-60 p-5 rounded-xl"
                 key={index}
               >
+                <div className="font-medium italic p-3 mb-3 bg-red-400 text-emerald-900 text-3xl">
+                  Room Name : {data.roomName}
+                </div>
                 <div>
                   Chatroom ID: {data.chatroomid} with size {data.member.length}
                 </div>
-                {data?.member?.map((data, index) => (
-                  <div key={index}>Member Socket ID: {data}</div>
-                ))}
                 <div className="flex mt-5 justify-center items-end">
                   <button
                     onClick={() => {
                       if (socket) {
                         socket.emit(SocketEvents.JoinChatroom, data.chatroomid);
                         setCurrentchatroom(data.chatroomid);
+                        setCurrentRoomname(data.roomName);
                         setMode(2);
                       } else {
                         alert("Create Client first");
@@ -188,6 +495,9 @@ export default function Home() {
                     Join
                   </button>
                 </div>
+                {data?.member?.map((data, index) => (
+                  <div key={index}>Member Socket ID: {data}</div>
+                ))}
               </div>
             ))}
           </div>
@@ -195,6 +505,9 @@ export default function Home() {
       )}
       {mode === 2 && (
         <>
+          <h2 className="flex justify-center items-center text-xl text-neutral-100 bg-blue-400">
+            Chatroom Name: {currentRoomName}
+          </h2>
           <div className="pt-5  relative ">
             <button
               className="bg-red-500 absolute top-5  px-4 py-2 rounded-xl"
@@ -231,15 +544,12 @@ export default function Home() {
               className="hidden"
               id="chatroomid"
               value={currentChatroom}
+              readOnly
             ></input>
             <button className="px-4 py-2 bg-pink-400">Send</button>
             <div id="is-typing-wrapper" className="w-[60%]">
               {typingUsers !== "" && (
-                <h1 className={
-                  theme
-                    ? "  text-white "
-                    : " text-black"
-                }>
+                <h1 className={theme ? "  text-white " : " text-black"}>
                   {typingUsers} is typing ...
                 </h1>
               )}
