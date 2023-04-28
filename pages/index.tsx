@@ -223,6 +223,9 @@ export default function Home() {
                   ? "px-4 py-2 w-[60%] bg-white bg-opacity-50 "
                   : "px-4 py-2 w-[60%] bg-black bg-opacity-20 "
               }
+              onChange={() => {
+                socket.emit(SocketEvents.Typing);
+              }}
             />
             <input
               className="hidden"
@@ -230,6 +233,17 @@ export default function Home() {
               value={currentChatroom}
             ></input>
             <button className="px-4 py-2 bg-pink-400">Send</button>
+            <div id="is-typing-wrapper" className="w-[60%]">
+              {typingUsers !== "" && (
+                <h1 className={
+                  theme
+                    ? "  text-white "
+                    : " text-black"
+                }>
+                  {typingUsers} is typing ...
+                </h1>
+              )}
+            </div>
           </form>
           <h1 className="mt-3 text-2xl flex justify-center">
             Message In Chatroom
