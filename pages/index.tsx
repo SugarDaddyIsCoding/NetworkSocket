@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import io from "socket.io-client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SocketEvents } from "@/types/events";
 import { Button, Form, Modal } from "react-bootstrap";
 import {
@@ -39,6 +39,8 @@ export default function Home() {
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   const [anim, setAnim] = useState(false);
+  const roomNameInputRef = useRef<HTMLInputElement>(null);
+
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
     const g = await fetch("/api/socket");
@@ -197,7 +199,7 @@ export default function Home() {
               aria-labelledby="modal-title"
               role="dialog"
               aria-modal="true"
-              onAnimationEnd={() => setAnim(false)}
+              onAnimationEnd={() => {if(roomNameInputRef != null && roomNameInputRef.current) roomNameInputRef.current.focus(); setAnim(false)}}
             >
               <form id="chatroomname-form" onSubmit={handleCreateAndJoinRoom}>
                 <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
@@ -424,6 +426,7 @@ export default function Home() {
                                   id="chatroomNameInput"
                                   type="text"
                                   placeholder="room name"
+                                  ref={roomNameInputRef}
                                 ></input>
                               </div>
                             </div>
