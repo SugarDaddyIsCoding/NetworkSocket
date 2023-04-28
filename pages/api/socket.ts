@@ -2,7 +2,7 @@ import { SocketEvents } from "@/types/events";
 import { Server } from "socket.io";
 let startchatroomid = 0; //global variable for chatroom id
 const onlineClients = new Map(); // create a new Map to store client data
-const onlineChatroom = new Map(); //Create a  new map to save a chatroom and all the client in each on
+const onlineChatroom = new Map<string, { chatroomid: string, member: string[], roomName: string }>(); //Create a  new map to save a chatroom and all the client in each on
 
 // variables for "is typing" function
 let userTimers = new Map<string, NodeJS.Timeout | undefined>();
@@ -50,7 +50,7 @@ export default function SocketHandler(req, res) {
       update();
     });
 
-    socket.on(SocketEvents.CreateChatroom, (roomName, callback) => {      
+    socket.on(SocketEvents.CreateChatroom, (roomName, callback) => {
       //create new chatroom and put that client into the new created chatroom
       socket.join(startchatroomid.toString());
       const existingUser = onlineClients.get(socket.id);
@@ -79,6 +79,11 @@ export default function SocketHandler(req, res) {
 
     socket.on(SocketEvents.JoinChatroom, (chatroomid) => {
       const currentChatroom = onlineChatroom.get(chatroomid);
+      if (currentChatroom === undefined) {
+        console.log("undefined chat room");
+        return;
+      }
+
       //Like create chatroom but join instead, use the chatroom id passed from frontend
       if (currentChatroom.member.includes(socket.id)) {
         //if already in that chatroom, don't join
@@ -107,6 +112,10 @@ export default function SocketHandler(req, res) {
 
     socket.on(SocketEvents.LeaveRoom, (chatroomid) => {
       const currentChatroom = onlineChatroom.get(chatroomid);
+      if (!currentChatroom) {
+        return;
+      }
+
       //Like create chatroom but leave instead, use the chatroom id passed from frontend
       if (!currentChatroom.member.includes(socket.id)) {
         //if not in that chatroom, can't leave
@@ -212,6 +221,13 @@ export default function SocketHandler(req, res) {
     socket.on("disconnect", () => {
       console.log("delete: ", socket.id);
       onlineClients.delete(socket.id); //remove disconnected client
+
+      // remove them from any group chats
+      onlineChatroom.forEach((room, roomId) => {
+        if (room.member.includes(socket.id)) {
+          room.member = room.member.filter(u => u != socket.id);
+        }
+      });
 
       update();
       // send an "update" event to all clients with the updated online client data
