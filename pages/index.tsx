@@ -1,7 +1,7 @@
 import Image from 'next/image'
 
 import io from 'socket.io-client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { SocketEvents } from '@/types/events'
 import { Button, Form, Modal } from 'react-bootstrap'
 import {
@@ -12,6 +12,9 @@ import {
   animals,
 } from 'unique-names-generator'
 import { runCleanup } from './api/socket'
+import { useOpenAI } from '@/hooks/useOpenAI'
+import { useInterval } from '@/hooks/useInterval'
+import { Abdul } from '@/types/abdul'
 let socket
 
 export default function Home() {
@@ -39,15 +42,18 @@ export default function Home() {
   const [show, setShow] = useState(false)
   const handleClose = () => {
     setShow(false)
-    setAbdulModal(false)
+    setAbdul((prev) => ({ ...prev, isModal: false }))
   }
   const handleShow = () => setShow(true)
   const [anim, setAnim] = useState(false)
   const roomNameInputRef = useRef<HTMLInputElement>(null)
 
   // states for chat-with-abdul
-  const [isAbdulModal, setAbdulModal] = useState(false)
-  const [isAbdulChatRoom, setAbdulChatRoom] = useState(false)
+  const openai = useOpenAI()
+  const [abdul, setAbdul] = useState<Abdul>({
+    isModal: false,
+    isChatRoom: false,
+  })
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -102,11 +108,11 @@ export default function Home() {
     if (socket) {
       socket.emit(
         SocketEvents.CreateChatroom,
-        { roomName, isAbdul: isAbdulModal },
+        { roomName, isAbdul: abdul.isModal },
         (response) => {
           setCurrentchatroom(response.socketid)
           setCurrentRoomname(response.roomName)
-          setAbdulChatRoom(isAbdulModal)
+          setAbdul((prev) => ({ ...prev, isChatRoom: abdul.isModal }))
           setMode(2)
           setShow(false)
         }
@@ -115,6 +121,7 @@ export default function Home() {
       alert('create client first')
       setMode(0)
     }
+    setAbdul((prev) => ({ ...prev, isModal: false }))
   }
 
   const Createuser = async (event) => {
@@ -141,6 +148,24 @@ export default function Home() {
       console.log('no socket')
     }
     event.target.chatmessage.value = ''
+  }
+
+  const askAbdul = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    // if (socket) {
+    // while (!openai.isStreaming);
+    console.log(openai.isStreaming)
+    // while (openai.isStreaming) {
+    //   console.log(openai.response)
+    //   // const data = {
+    //   //   chatRoomId: currentChatroom,
+    //   //   response: abdul.response,
+    //   // }
+    //   // socket.emit(SocketEvents.BroadcastAbdulResponse)
+    // }
+    // } else {
+    //   console.log('no socket')
+    // }
   }
 
   return (
@@ -432,7 +457,7 @@ export default function Home() {
                               className='text-base font-bold leading-6 text-gray-900 text-lg'
                               id='modal-title'
                             >
-                              {!isAbdulModal
+                              {!abdul.isModal
                                 ? 'New a chat room'
                                 : 'New Abdul Chatroom'}
                             </h3>
@@ -488,7 +513,7 @@ export default function Home() {
             <button
               onClick={() => {
                 setAnim(true)
-                setAbdulModal(true)
+                setAbdul((prev) => ({ ...prev, isModal: true }))
                 handleShow()
               }}
               className='px-4 rounded-xl border-red-500 bg-blue-600  py-2'
@@ -518,11 +543,14 @@ export default function Home() {
                         socket.emit(
                           SocketEvents.JoinChatroom,
                           data.chatroomid,
-                          !!isAbdulModal
+                          data.isAbdul
                         )
                         setCurrentchatroom(data.chatroomid)
                         setCurrentRoomname(data.roomName)
-                        setAbdulChatRoom(data.isAbdul)
+                        setAbdul((prev) => ({
+                          ...prev,
+                          isChatRoom: data.isAbdul,
+                        }))
                         setMode(2)
                       } else {
                         alert('create client first')
@@ -547,8 +575,9 @@ export default function Home() {
           <h2 className='flex justify-center items-center text-xl text-neutral-100 bg-blue-400'>
             Chatroom Name: {currentRoomName}
           </h2>
-          {isAbdulChatRoom && <h3 className='text-center'>อับดุลเอ้ย</h3>}
+          {abdul.isChatRoom && <h3 className='text-center'>อับดุลเอ้ย</h3>}
           <div className='pt-5  relative '>
+            {/* #LEAVE BUTTON */}
             <button
               className='bg-red-500 absolute top-5  px-4 py-2 rounded-xl'
               onClick={() => {
@@ -564,52 +593,120 @@ export default function Home() {
             >
               Leave
             </button>
-
+            {/* #CHATROOM ID */}
             <h1 className='flex justify-center items-center text-4xl  '>
               Chatroom ID: {currentChatroom}
             </h1>
           </div>
-          <form className='flex justify-center mt-5' onSubmit={Createmes}>
-            <input
-              id='chatmessage'
-              className={
-                theme
-                  ? 'px-4 py-2 w-[60%] bg-white bg-opacity-50 '
-                  : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
-              }
-              onChange={() => {
-                socket.emit(SocketEvents.Typing)
-              }}
-            />
-            <input
-              className='hidden'
-              id='chatroomid'
-              value={currentChatroom}
-              readOnly
-            ></input>
-            <button className='px-4 py-2 bg-pink-400'>Send</button>
-            <div id='is-typing-wrapper' className='w-[60%]'>
-              {typingUsers !== '' && (
-                <h1 className={theme ? '  text-white ' : ' text-black'}>
-                  {typingUsers} is typing ...
-                </h1>
-              )}
-            </div>
-          </form>
-          <h1 className='mt-3 text-2xl flex justify-center'>
-            Message In Chatroom
-          </h1>
-          <div className='mt-5 mx-10'>
-            {currentmessage?.map((data, index) => (
-              <div
-                className=' bg-opacity-80 bg-green-500 w-auto py-1 px-2'
-                key={data}
+          {/* #MESSAGE BAR */}
+          {!abdul.isChatRoom ? (
+            <>
+              <form
+                className='flex justify-center mt-5 border-4'
+                onSubmit={Createmes}
               >
-                <span className='bg-blue-400 px-2 py-1'>{data.sender}</span>:{' '}
-                {data.newmessage}
+                <input
+                  id='chatmessage'
+                  className={
+                    theme
+                      ? 'px-4 py-2 w-[60%] bg-white bg-opacity-50 '
+                      : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
+                  }
+                  onChange={(event) => {
+                    socket.emit(SocketEvents.Typing)
+                  }}
+                />
+                <input
+                  className='hidden'
+                  id='chatroomid'
+                  value={currentChatroom}
+                  readOnly
+                ></input>
+                <button className='px-4 py-2 bg-pink-400'>Send</button>
+                {/* #IS TYPING */}
+                <div id='is-typing-wrapper' className='w-[60%]'>
+                  {typingUsers !== '' && (
+                    <h1 className={theme ? '  text-white ' : ' text-black'}>
+                      {typingUsers} is typing ...
+                    </h1>
+                  )}
+                </div>
+              </form>
+              <h1 className='mt-3 text-2xl flex justify-center'>
+                Message In Chatroom
+              </h1>
+              <div className='mt-5 mx-10'>
+                {currentmessage?.map((data, index) => (
+                  <div
+                    className=' bg-opacity-80 bg-green-500 w-auto py-1 px-2'
+                    key={data}
+                  >
+                    <span className='bg-blue-400 px-2 py-1'>{data.sender}</span>
+                    : {data.newmessage}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            // FOR ABDUL HERE
+            <>
+              <form
+                className='flex justify-center mt-5 border-4'
+                onSubmit={(event) => {
+                  openai.handleSubmit(event)
+                  askAbdul(event)
+                }}
+              >
+                <input
+                  id='chatmessage'
+                  value={openai.message}
+                  className={
+                    theme
+                      ? 'px-4 py-2 w-[60%] bg-white bg-opacity-50 '
+                      : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
+                  }
+                  onChange={(event) => {
+                    openai.handleChange(event)
+                    // socket.emit(SocketEvents.Typing)
+                  }}
+                />
+                <input
+                  className='hidden'
+                  id='chatroomid'
+                  value={currentChatroom}
+                  readOnly
+                ></input>
+                <button className='px-4 py-2 bg-pink-400' disabled={false}>
+                  Send
+                </button>
+                {/* #IS TYPING */}
+                <div id='is-typing-wrapper' className='w-[60%]'>
+                  {typingUsers !== '' && (
+                    <h1 className={theme ? '  text-white ' : ' text-black'}>
+                      {typingUsers} is typing ...
+                    </h1>
+                  )}
+                </div>
+              </form>
+              <h1 className='mt-3 text-2xl flex justify-center'>
+                Message In Chatroom
+              </h1>
+              <div className='mt-5 mx-10'>
+                {currentmessage?.map((data, index) => (
+                  <div
+                    className=' bg-opacity-80 bg-green-500 w-auto py-1 px-2'
+                    key={data}
+                  >
+                    <span className='bg-blue-400 px-2 py-1'>{data.sender}</span>
+                    : {data.newmessage}
+                  </div>
+                ))}
+              </div>
+              <div>{openai.message}</div>
+              <div>{openai.response}</div>
+              <div>{JSON.stringify(openai.isStreaming)}</div>
+            </>
+          )}
         </>
       )}
     </div>

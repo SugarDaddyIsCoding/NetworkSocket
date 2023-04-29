@@ -1,6 +1,7 @@
 import { ChatCompletionRequestMessage } from 'openai-streams'
 import { yieldStream } from 'yield-stream'
 import { useEffect, useState } from 'react'
+import { useInterval } from './useInterval'
 
 /**
  * Hello world
@@ -13,6 +14,8 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
   const [isStreaming, setStreaming] = useState(false)
+  const [isBlinking, setBlinking] = useState(false)
+  const cursor = isStreaming && isBlinking
 
   // pass to api
   const [messages, setMessages] = useState(
@@ -20,12 +23,12 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
   )
 
   // input change
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(e.target.value)
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(event.target.value)
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setMessage('')
     setStreaming(true)
 
@@ -50,9 +53,7 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
 
       let buffer = ''
       for await (const chunk of yieldStream(_response.body)) {
-        console.log(chunk)
         const decodedChunk = String.fromCharCode(...Array.from(chunk))
-        console.log(decodedChunk)
         buffer += decodedChunk
         // set
         setResponse(buffer)
@@ -72,11 +73,18 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
     }
   }, [isStreaming])
 
+  useInterval(() => {
+    if (isStreaming) {
+      setBlinking((prev) => !prev)
+    }
+  }, 400)
+
   return {
     message,
     response,
     handleChange,
     handleSubmit,
     isStreaming,
+    cursor,
   }
 }
