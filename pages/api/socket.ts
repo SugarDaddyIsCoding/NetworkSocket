@@ -3,9 +3,9 @@ import { SocketEvents } from "@/types/events";
 import { Server } from "socket.io";
 
 // variables for "is typing" function
-let userTimers = new Map<string, NodeJS.Timeout | undefined>();
-let typingUsers = new Array<string>();
-const typingTimeout = 5000;
+let userTimers = new Map<string, NodeJS.Timeout | undefined>()
+let typingUsers = new Array<string>()
+const typingTimeout = 5000
 
 export default function SocketHandler(req, res) {
   // It means that socket server was already initialised
@@ -22,47 +22,50 @@ export default function SocketHandler(req, res) {
     //new client joined!
     onlineClients.set(socket.id, {
       id: socket.id,
-      username: "unknown",
+      username: 'unknown',
       joinedroom: [],
-    });
+    })
 
     // send an "update" event to all clients with the number of online clients
     update(io);
 
     socket.on(SocketEvents.SetUserName, (msg) => {
       //Set username
-      if (msg !== "") {
+      if (msg !== '') {
         onlineClients.set(socket.id, {
           id: socket.id,
           username: msg,
           joinedroom: [],
-        });
+        })
       } else {
         onlineClients.set(socket.id, {
           id: socket.id,
-          username: "No name",
+          username: 'No name',
           joinedroom: [],
-        });
+        })
       }
       //after set username uodate to every client
       update(io);
     });
 
-    socket.on(SocketEvents.CreateChatroom, (roomName, callback) => {
-      //create new chatroom and put that client into the new created chatroom
-      socket.join(startchatroomid.toString());
-      const existingUser = onlineClients.get(socket.id);
+    socket.on(
+      SocketEvents.CreateChatroom,
+      ({ roomName, isAbdul }, callback) => {
+        //create new chatroom and put that client into the new created chatroom
+        socket.join(startchatroomid.toString())
+        const existingUser = onlineClients.get(socket.id)
 
       const newroom: Array<string> = existingUser.joinedroom;
       newroom.push(startchatroomid.toString());
       //console.lognewroom);
       onlineClients.set(socket.id, { ...existingUser, joinedroom: newroom });
 
-      onlineChatroom.set(startchatroomid.toString(), {
-        chatroomid: startchatroomid.toString(),
-        member: [socket.id],
-        roomName,
-      });
+        onlineChatroom.set(startchatroomid.toString(), {
+          chatroomid: startchatroomid.toString(),
+          member: [socket.id],
+          roomName,
+          isAbdul,
+        })
 
       //console.log("in socket.io handler");
       //console.log(onlineChatroom);
@@ -74,11 +77,12 @@ export default function SocketHandler(req, res) {
       //console.log("joined!!");
       callback({ socketid: startchatroomid.toString(), roomName });
 
-      startchatroomid++; //make this is unique
-    });
+        startchatroomid++ //make this is unique
+      }
+    )
 
     socket.on(SocketEvents.JoinChatroom, (chatroomid) => {
-      const currentChatroom = onlineChatroom.get(chatroomid);
+      const currentChatroom = onlineChatroom.get(chatroomid)
       if (currentChatroom === undefined) {
         //console.log("undefined chat room");
         return;
@@ -90,30 +94,30 @@ export default function SocketHandler(req, res) {
         //console.log("already in this chatroom!");
         return;
       }
-      socket.join(chatroomid);
+      socket.join(chatroomid)
 
-      const existingUser = onlineClients.get(socket.id);
+      const existingUser = onlineClients.get(socket.id)
 
       const newroom: Array<string> = existingUser.joinedroom;
       newroom.push(chatroomid);
       //console.lognewroom);
       onlineClients.set(socket.id, { ...existingUser, joinedroom: newroom });
 
-      const newmember: Array<string> = currentChatroom.member;
-      newmember.push(socket.id);
+      const newmember: Array<string> = currentChatroom.member
+      newmember.push(socket.id)
       onlineChatroom.set(chatroomid, {
         ...currentChatroom,
         member: newmember,
-      });
+      })
 
       update(io);
       //console.log(socket.id, "successfully joined room", chatroomid);
     });
 
     socket.on(SocketEvents.LeaveRoom, (chatroomid) => {
-      const currentChatroom = onlineChatroom.get(chatroomid);
+      const currentChatroom = onlineChatroom.get(chatroomid)
       if (!currentChatroom) {
-        return;
+        return
       }
 
       //Like create chatroom but leave instead, use the chatroom id passed from frontend
@@ -122,72 +126,78 @@ export default function SocketHandler(req, res) {
         //console.log("not in the chatroom!");
         return;
       }
-      socket.leave(chatroomid);
+      socket.leave(chatroomid)
 
-      const me = onlineClients.get(socket.id);
+      const me = onlineClients.get(socket.id)
 
       // remove the room from my joined rooms
-      let myrooms: Array<string> = me.joinedroom;
-      myrooms = myrooms.filter((roomId) => roomId !== chatroomid);
+      let myrooms: Array<string> = me.joinedroom
+      myrooms = myrooms.filter((roomId) => roomId !== chatroomid)
 
       // update the state in onlineClients
-      onlineClients.set(socket.id, { ...me, joinedroom: myrooms });
+      onlineClients.set(socket.id, { ...me, joinedroom: myrooms })
 
       // remove me from the currentChatroom
-      let newmember: Array<string> = currentChatroom.member;
-      newmember = newmember.filter((member) => member !== socket.id);
+      let newmember: Array<string> = currentChatroom.member
+      newmember = newmember.filter((member) => member !== socket.id)
 
       // update the state of onlineChatroom
       onlineChatroom.set(chatroomid, {
         ...currentChatroom,
         member: newmember,
-      });
+      })
 
       update(io);
 
       //remove him from the typingUsers List
-      typingUsers = typingUsers.filter(userId => userId !== socket.id)
+      typingUsers = typingUsers.filter((userId) => userId !== socket.id)
       io.emit(SocketEvents.UpdateTypingUsers, {
-        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
-      });
+        typingUsers: typingUsers.map((u) => [
+          u,
+          onlineClients.get(u).username as string,
+        ]),
+      })
 
       //console.log(socket.id, "successfully leave room", chatroomid);
     });
 
     socket.on(SocketEvents.SendMessage, (messagedata) => {
       //remove him from the typingUsers List
-      typingUsers = typingUsers.filter(userId => userId !== socket.id)
+      typingUsers = typingUsers.filter((userId) => userId !== socket.id)
       io.emit(SocketEvents.UpdateTypingUsers, {
-        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
-      });
+        typingUsers: typingUsers.map((u) => [
+          u,
+          onlineClients.get(u).username as string,
+        ]),
+      })
 
       //need to check if that user is in that chatroom
 
-      const currentclient = onlineClients.get(socket.id);
+      const currentclient = onlineClients.get(socket.id)
       if (currentclient.joinedroom.includes(messagedata.chatroomid)) {
         const tosend = {
           newmessage: messagedata.newmessage,
           sender: currentclient.username,
-        };
+        }
 
-        io.in(messagedata.chatroomid).emit(SocketEvents.BroadCastMessage, tosend);
+        io.in(messagedata.chatroomid).emit(
+          SocketEvents.BroadCastMessage,
+          tosend
+        )
       } else {
         //console.log("can't send not in this chatroom");
       }
-    });
-
-
+    })
 
     socket.on(SocketEvents.Typing, () => {
-
       // delete countdown timer if any
-      const me: string = socket.id;
-      clearTimeout(userTimers.get(me));
-      userTimers.set(me, undefined);
+      const me: string = socket.id
+      clearTimeout(userTimers.get(me))
+      userTimers.set(me, undefined)
 
       // add the user to the list of typingUsers
       if (!typingUsers.includes(me)) {
-        typingUsers.push(me);
+        typingUsers.push(me)
       }
 
       //console.log("typingUsers");
@@ -195,10 +205,8 @@ export default function SocketHandler(req, res) {
 
       // emit an updateTypers event to client
       io.emit(SocketEvents.UpdateTypingUsers, {
-        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username])
-      });
-
-
+        typingUsers: typingUsers.map((u) => [u, onlineClients.get(u).username]),
+      })
 
       // startTimer for this dude, in the callback
       // do - remove him from the list typingUsers
@@ -219,8 +227,7 @@ export default function SocketHandler(req, res) {
         }
       })(me), typingTimeout);
 
-      userTimers.set(me, timerId);
-
+      userTimers.set(me, timerId)
     })
 
     socket.on("disconnect", () => {
@@ -230,9 +237,9 @@ export default function SocketHandler(req, res) {
       // remove them from any group chats
       onlineChatroom.forEach((room, roomId) => {
         if (room.member.includes(socket.id)) {
-          room.member = room.member.filter(u => u != socket.id);
+          room.member = room.member.filter((u) => u != socket.id)
         }
-      });
+      })
 
       update(io);
       // send an "update" event to all clients with the updated online client data
@@ -240,13 +247,15 @@ export default function SocketHandler(req, res) {
       //console.log("Disconnected!!", onlineClients.size);
       // Get a list of all active sockets
 
-
       //remove him from the typingUsers List
-      typingUsers = typingUsers.filter(userId => userId !== socket.id)
+      typingUsers = typingUsers.filter((userId) => userId !== socket.id)
       io.emit(SocketEvents.UpdateTypingUsers, {
-        typingUsers: typingUsers.map(u => [u, onlineClients.get(u).username as string])
-      });
-    });
+        typingUsers: typingUsers.map((u) => [
+          u,
+          onlineClients.get(u).username as string,
+        ]),
+      })
+    })
 
     //reuse function
   };
