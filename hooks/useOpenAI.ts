@@ -1,6 +1,11 @@
 import { ChatCompletionRequestMessage } from 'openai-streams'
 import { yieldStream } from 'yield-stream'
 import { useEffect, useState } from 'react'
+import { useInterval } from './useInterval'
+
+interface OpenAIOptions {
+  history?: ChatCompletionRequestMessage[]
+}
 
 /**
  * Hello world
@@ -8,24 +13,30 @@ import { useEffect, useState } from 'react'
  * @returns Everything needed for an OpenAI form
  *
  */
-export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
+export function useOpenAI(options?: OpenAIOptions) {
   // state hooks
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
   const [isStreaming, setStreaming] = useState(false)
+  const [toggle, setToggle] = useState(false)
+  const cursor = isStreaming && toggle
 
   // pass to api
   const [messages, setMessages] = useState(
-    history || new Array<ChatCompletionRequestMessage>()
+    options?.history || new Array<ChatCompletionRequestMessage>()
   )
 
   // input change
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(e.target.value)
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(event.target.value)
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  useEffect(() => {
+    options?.history && setMessages([...options.history])
+  }, [options?.history])
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setMessage('')
     setStreaming(true)
 
@@ -50,9 +61,7 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
 
       let buffer = ''
       for await (const chunk of yieldStream(_response.body)) {
-        console.log(chunk)
         const decodedChunk = String.fromCharCode(...Array.from(chunk))
-        console.log(decodedChunk)
         buffer += decodedChunk
         // set
         setResponse(buffer)
@@ -62,8 +71,11 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
       console.error(error)
     }
 
-    setMessages([...tmp])
+    setResponse('')
     setStreaming(false)
+    if (!history) {
+      setMessages([...tmp])
+    }
   }
 
   useEffect(() => {
@@ -72,11 +84,18 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
     }
   }, [isStreaming])
 
+  useInterval(() => {
+    if (isStreaming) {
+      setToggle((prev) => !prev)
+    }
+  }, 400)
+
   return {
     message,
     response,
     handleChange,
     handleSubmit,
     isStreaming,
+    cursor,
   }
 }

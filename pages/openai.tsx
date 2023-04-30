@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useOpenAI } from '@/hooks/useOpenAI'
 import { useInterval } from '@/hooks/useInterval'
 
-export default function Test() {
+export default function OpenAI() {
   // TODO: gather user message history and send to api
   // const messages: ChatCompletionRequestMessage[] = [
   //   {
@@ -10,20 +10,15 @@ export default function Test() {
   //     content: 'Tell me about Elon Musk',
   //   },
   // ]
-  const [cursor, setCursor] = useState('▋')
-
-  const { message, response, handleChange, handleSubmit, isStreaming } =
+  const { message, response, handleChange, handleSubmit, isStreaming, cursor } =
     useOpenAI()
 
+  // autofocus input
   const inputRef = useCallback((node: HTMLInputElement) => {
     if (node) {
       node.focus()
     }
   }, [])
-
-  useInterval(() => {
-    setCursor((prev) => (prev ? '' : '▋'))
-  }, 500)
 
   return (
     <div className='flex-center flex-col min-h-screen max-w-xl mx-auto p-8 text-gray-700'>
@@ -31,7 +26,7 @@ export default function Test() {
         <div className='min-h-[28px] max-w-full pre-wrap'>{message}</div>
         <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
           {response}
-          {isStreaming && cursor}
+          {cursor && '▋'}
         </div>
       </div>
       <form
