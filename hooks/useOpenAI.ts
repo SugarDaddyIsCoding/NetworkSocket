@@ -18,7 +18,8 @@ export function useOpenAI(options?: OpenAIOptions) {
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
   const [isStreaming, setStreaming] = useState(false)
-  const [cursor, setCursor] = useState(false)
+  const [toggle, setToggle] = useState(false)
+  const cursor = isStreaming && toggle
 
   // pass to api
   const [messages, setMessages] = useState(
@@ -29,6 +30,10 @@ export function useOpenAI(options?: OpenAIOptions) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(event.target.value)
   }
+
+  useEffect(() => {
+    options?.history && setMessages([...options.history])
+  }, [options?.history])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -81,9 +86,7 @@ export function useOpenAI(options?: OpenAIOptions) {
 
   useInterval(() => {
     if (isStreaming) {
-      setCursor((prev) => !prev)
-    } else {
-      setCursor(false)
+      setToggle((prev) => !prev)
     }
   }, 400)
 

@@ -5,7 +5,6 @@ export type Abdul = {
   isChatRoom: boolean
   isStreaming: boolean
   history: ChatCompletionRequestMessage[]
-  allHistory: ChatCompletionRequestMessage[]
   refMessage: string
   response: string
   refResponse: string

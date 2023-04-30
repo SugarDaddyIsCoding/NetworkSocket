@@ -763,11 +763,29 @@ export default function Home() {
               <div className='mt-5 mx-10'>
                 {currentmessage?.map((data, index) => (
                   <div
-                    className=' bg-opacity-80 bg-green-500 w-auto py-1 px-2'
+                    className='flex flex-col gap-1 bg-opacity-80 bg-green-500 w-auto py-1 px-2'
                     key={`${socket?.id}-${index}`}
                   >
-                    <span className='bg-blue-400 px-2 py-1'>{data.sender}</span>
-                    : {data.newmessage}
+                    <div>
+                      <span className='bg-blue-400 px-2 h-full'>
+                        {data.sender}
+                      </span>
+                      : {data.newmessage}
+                    </div>
+                    {index === currentmessage?.length - 1 && abdul.response ? (
+                      <div>
+                        <span className='bg-blue-400 px-2 h-full'>Abdul</span>:{' '}
+                        {abdul.response}
+                        {abdul.cursor && '▋'}
+                      </div>
+                    ) : (
+                      abdul.history[2 * index + 1] && (
+                        <div>
+                          <span className='bg-blue-400 px-2 h-full'>Abdul</span>
+                          : {abdul.history[2 * index + 1]?.content}
+                        </div>
+                      )
+                    )}
                   </div>
                 ))}
               </div>

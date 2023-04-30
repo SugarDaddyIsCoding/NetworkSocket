@@ -210,13 +210,6 @@ export default function SocketHandler(req, res) {
         response: string
         cursor: boolean
       }) => {
-        console.log({
-          chatRoomId,
-          isStreaming,
-          refMessage,
-          response,
-          cursor,
-        })
         io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulResponse, {
           isStreaming,
           refMessage,
