@@ -84,7 +84,7 @@ export default function Home() {
     });
 
     socket.on(SocketEvents.ReceiveDirect, ({ isDirect }) => {
-      console.log(isDirect);
+      //console.log(isDirect);
       setDirect(isDirect);
     });
   };
@@ -564,35 +564,69 @@ export default function Home() {
           </h1>
           <div className="grid mt-5 grid-cols-3 gap-5">
             {onlineChat?.map((data, index) => {
-              if (isDirect)
-                //console.log(onlineUser.filter((u) => u.id === data.ReceiverID)[0])
-                return (
-                  <div
-                    className="bg-violet-500 bg-opacity-60 p-5 rounded-xl"
-                    key={index}
-                  >
+              //console.log(onlineUser.filter((u) => u.id === data.ReceiverID)[0])
+              return (
+                <div
+                  className="bg-violet-500 bg-opacity-60 p-5 rounded-xl"
+                  key={index}
+                >
+                  {isDirect && (
                     <div className="font-medium italic p-3 mb-3 bg-red-400 text-emerald-900 text-3xl">
-                      Room Name :
-                      {meName == data.SenderName
+                      Message From :
+                      {meName === data.SenderName
                         ? onlineUser.filter((u) => u.id === data.ReceiverID)[0]
                             .username
-                        : data.SenderName}
+                        : (data.roomName || false)? data.roomName: data.SenderName}
                     </div>
-                    <div>
-                      Chatroom ID: {data.chatroomid} with size{" "}
-                      {data.member.length}
+                  )}
+                  {!isDirect && (
+                    <div className="font-medium italic p-3 mb-3 bg-red-400 text-emerald-900 text-3xl">
+                      Room Name :{data.roomName}
                     </div>
-                    <div className="flex mt-5 justify-center items-end">
+                  )}
+                  <div>
+                    Chatroom ID: {data.chatroomid} with size{" "}
+                    {data.member.length}
+                  </div>
+                  <div className="flex mt-5 justify-center items-end">
+                    {
+                      (meName ===
+                        onlineUser.filter((u) => u.id === data.ReceiverID)[0]?
+                          .username ||
+                        meName === data.SenderName) && (
+                        <button
+                          onClick={() => {
+                            if (socket) {
+                              socket.emit(
+                                SocketEvents.JoinChatroom,
+                                data.chatroomid,
+                                !!isDirect
+                              );
+                              setCurrentchatroom(data.chatroomid);
+                              setCurrentRoomname(data.roomName);
+                              setMode(2);
+                            } else {
+                              alert("create client first");
+                              setMode(0);
+                            }
+                          }}
+                          className=" bg-sky-500 px-4 py-2 rounded-xl"
+                        >
+                          Accept
+                        </button>
+                      )}
+                    {!data.isDirect && (
                       <button
                         onClick={() => {
                           if (socket) {
                             socket.emit(
                               SocketEvents.JoinChatroom,
                               data.chatroomid,
-                              !!isDirect
+                              !!isAbdulModal
                             );
                             setCurrentchatroom(data.chatroomid);
-                            setCurrentRoomname(data.Name);
+                            setCurrentRoomname(data.roomName);
+                            setAbdulChatRoom(data.isAbdul);
                             setMode(2);
                           } else {
                             alert("create client first");
@@ -603,13 +637,14 @@ export default function Home() {
                       >
                         Join
                       </button>
-                    </div>
-                    {data?.member?.map((data, index) => (
-                      <div key={index}>Member Socket ID: {data}</div>
-                    ))}
+                    )}
                   </div>
-                );
-              else
+                  {data?.member?.map((data, index) => (
+                    <div key={index}>Member Socket ID: {data}</div>
+                  ))}
+                </div>
+              );
+              /*else
                 return (
                   <div
                     className="bg-violet-500 bg-opacity-60 p-5 rounded-xl"
@@ -649,7 +684,7 @@ export default function Home() {
                       <div key={index}>Member Socket ID: {data}</div>
                     ))}
                   </div>
-                );
+                );*/
             })}
           </div>
         </div>
