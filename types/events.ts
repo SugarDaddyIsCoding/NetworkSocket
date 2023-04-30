@@ -13,6 +13,8 @@ export enum SocketEvents {
   BroadCastMessage = 'BROADCAST_MESSAGE',
 
   // For Abdul
-  AskAbdul = 'ASK_ABDUL',
+  AbdulMessage = 'ABDUL_MESSAGE',
+  BroadcastAbdulMessage = 'BROADCAST_ABDUL_MESSAGE',
+  AbdulResponse = 'ABDUL_REPONSE',
   BroadcastAbdulResponse = 'BROADCAST_ABDUL_RESPONSE',
 }

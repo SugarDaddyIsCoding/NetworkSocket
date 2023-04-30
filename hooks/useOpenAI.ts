@@ -1,10 +1,10 @@
 import { ChatCompletionRequestMessage } from 'openai-streams'
 import { yieldStream } from 'yield-stream'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useInterval } from './useInterval'
 
 interface OpenAIOptions {
-  history?: ChatCompletionRequestMessage[]
+  messages?: ChatCompletionRequestMessage[]
 }
 
 /**
@@ -15,39 +15,54 @@ interface OpenAIOptions {
  */
 export function useOpenAI(options?: OpenAIOptions) {
   // state hooks
+  const [messages, setMessages] = useState(
+    options?.messages ?? new Array<ChatCompletionRequestMessage>()
+  )
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
-  const [isStreaming, setStreaming] = useState(false)
+  const messageRef = useRef(message)
+  const responseRef = useRef(response)
   const [toggle, setToggle] = useState(false)
-  const cursor = isStreaming && toggle
+  const cursor = !!response && toggle
 
-  // pass to api
-  const [messages, setMessages] = useState(
-    options?.history || new Array<ChatCompletionRequestMessage>()
-  )
+  // add another cock cycle to remember state
+  useEffect(() => {
+    messageRef.current = message
+  }, [message])
+
+  useEffect(() => {
+    responseRef.current = response
+  }, [response])
+
+  // useEffect(() => {
+  //   if (!response) {
+  //   }
+  // }, [response])
 
   // input change
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(event.target.value)
   }
 
-  useEffect(() => {
-    options?.history && setMessages([...options.history])
-  }, [options?.history])
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleSubmit = async (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault()
+    console.log('pls')
     setMessage('')
-    setStreaming(true)
 
     const tmp = [...messages]
-    tmp.push({ role: 'user', content: message })
+    tmp.push({
+      role: 'user',
+      content: message,
+    })
 
     try {
       const _response = await fetch('http://localhost:3000/api/openai', {
         method: 'POST',
-        body: JSON.stringify({ messages: tmp }),
+        body: JSON.stringify({
+          messages: tmp,
+        }),
       })
+
       if (!_response.ok || !_response.body) {
         const errorText = `[${_response.status}] ${_response.statusText}`
 
@@ -66,36 +81,27 @@ export function useOpenAI(options?: OpenAIOptions) {
         // set
         setResponse(buffer)
       }
-      tmp.push({ role: 'assistant', content: buffer })
     } catch (error) {
       console.error(error)
     }
 
     setResponse('')
-    setStreaming(false)
-    if (!history) {
-      setMessages([...tmp])
-    }
   }
 
-  useEffect(() => {
-    if (!isStreaming) {
-      setMessages([...messages])
-    }
-  }, [isStreaming])
-
   useInterval(() => {
-    if (isStreaming) {
+    if (response) {
       setToggle((prev) => !prev)
     }
   }, 400)
 
   return {
+    messages,
     message,
     response,
+    messageRef: messageRef.current,
+    responseRef: responseRef.current,
     handleChange,
     handleSubmit,
-    isStreaming,
     cursor,
   }
 }

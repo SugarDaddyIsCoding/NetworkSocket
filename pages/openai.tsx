@@ -10,8 +10,16 @@ export default function OpenAI() {
   //     content: 'Tell me about Elon Musk',
   //   },
   // ]
-  const { message, response, handleChange, handleSubmit, isStreaming, cursor } =
-    useOpenAI()
+  const {
+    messages,
+    message,
+    response,
+    messageRef,
+    responseRef,
+    handleChange,
+    handleSubmit,
+    cursor,
+  } = useOpenAI()
 
   // autofocus input
   const inputRef = useCallback((node: HTMLInputElement) => {
@@ -25,8 +33,20 @@ export default function OpenAI() {
       <div className='flex flex-col flex-1 gap-4 w-full'>
         <div className='min-h-[28px] max-w-full pre-wrap'>{message}</div>
         <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
-          {response}
+          1 {JSON.stringify(messages)}
+        </div>
+        <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
+          2 {message}
+        </div>
+        <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
+          3 {messageRef}
+        </div>
+        <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
+          4 {response}
           {cursor && '▋'}
+        </div>
+        <div className='min-h-[28px] max-w-full pre-wrap text-md inline'>
+          5 {responseRef}
         </div>
       </div>
       <form

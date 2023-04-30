@@ -6,6 +6,7 @@ import {
 } from '@/share/context'
 import { SocketEvents } from '@/types/events'
 import { Server } from 'socket.io'
+import { ChatCompletionRequestMessage } from 'openai-streams'
 
 // variables for "is typing" function
 let userTimers = new Map<string, NodeJS.Timeout | undefined>()
@@ -201,25 +202,37 @@ export default function SocketHandler(req, res) {
       }
     })
 
+    // ABDUL: Broadcast abdul message for every users in the same chatroom
+    socket.on(
+      SocketEvents.AbdulMessage,
+      ({ chatRoomId, message }: { chatRoomId: string; message: string }) => {
+        console.log('on: AbdulMessage')
+        console.log({ message })
+        io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulMessage, {
+          message,
+        })
+      }
+    )
+
     // ABDUL: Broadcast abdul response for every users in the same chatroom
     socket.on(
-      SocketEvents.AskAbdul,
+      SocketEvents.AbdulResponse,
       ({
         chatRoomId,
-        isStreaming,
-        refMessage,
         response,
         cursor,
       }: {
         chatRoomId: string
-        isStreaming: boolean
-        refMessage: string
         response: string
         cursor: boolean
       }) => {
+        console.log('on: AbdulResponse')
+        console.log({
+          chatRoomId,
+          response,
+          cursor,
+        })
         io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulResponse, {
-          isStreaming,
-          refMessage,
           response,
           cursor,
         })

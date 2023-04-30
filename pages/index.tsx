@@ -67,11 +67,9 @@ export default function Home() {
   const [abdul, setAbdul] = useState<Abdul>({
     isModal: false,
     isChatRoom: false,
-    isStreaming: false,
-    history: [],
+    messages: [],
+    message: '',
     response: '',
-    refMessage: '',
-    refResponse: '',
     cursor: false,
   })
 
@@ -79,56 +77,39 @@ export default function Home() {
     setAbdul({
       isModal: false,
       isChatRoom: false,
-      isStreaming: false,
-      history: [],
+      messages: [],
+      message: '',
       response: '',
-      refMessage: '',
-      refResponse: '',
       cursor: false,
     })
   }
 
-  const openai = useOpenAI({ history: abdul.history })
+  const openai = useOpenAI({ messages: abdul.messages })
 
   useEffect(() => {
-    if (socket) {
-      const data = {
+    if (socket && openai.response) {
+      socket.emit(SocketEvents.AbdulResponse, {
         chatRoomId: currentChatroom,
-        isStreaming: openai.isStreaming,
-        refMessage: abdul.refMessage,
         response: openai.response,
         cursor: openai.cursor,
-      }
-      console.log(data)
-      socket.emit(SocketEvents.AskAbdul, data)
+      })
     }
   }, [socket, openai.response])
 
   useEffect(() => {
-    if (abdul.response) {
+    if (socket && abdul.message) {
       setAbdul((prev) => ({
         ...prev,
-        refResponse: abdul.response,
+        messages: [
+          ...prev.messages,
+          {
+            role: 'user',
+            content: abdul.message,
+          },
+        ],
       }))
     }
-  }, [abdul.response])
-
-  useEffect(() => {
-    if (!abdul.isStreaming) {
-      setAbdul((prev) =>
-        abdul.refMessage && abdul.refResponse
-          ? {
-              ...prev,
-              history: [
-                ...prev.history,
-                { role: 'user', content: abdul.refMessage },
-                { role: 'assistant', content: abdul.refResponse },
-              ],
-            }
-          : { ...prev }
-      )
-    }
-  }, [abdul.isStreaming])
+  }, [socket, abdul.message])
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -161,19 +142,35 @@ export default function Home() {
     })
 
     // Abdul
-    socket.on(
-      SocketEvents.BroadcastAbdulResponse,
-      ({ isStreaming, refMessage, response, cursor }) => {
-        console.log('abc')
-        setAbdul((prev) => ({
+    socket.on(SocketEvents.BroadcastAbdulMessage, ({ message }) => {
+      console.log('on: BroadcastAbdulMessage')
+      console.log(message)
+      setAbdul((prev) => ({
+        ...prev,
+        message,
+      }))
+    })
+
+    // Abdul
+    socket.on(SocketEvents.BroadcastAbdulResponse, ({ response, cursor }) => {
+      console.log('on: BroadcastAbdulResponse')
+      setAbdul((prev) => {
+        const len = prev.messages.length
+        const messages = [...prev.messages]
+        if (response) {
+          if (messages[len - 1].role === 'user') {
+            messages.push({ role: 'assistant', content: response })
+          }
+          messages[len - 1].content = response
+        }
+        return {
           ...prev,
-          isStreaming,
-          refMessage,
+          messages,
           response,
           cursor,
-        }))
-      }
-    )
+        }
+      })
+    })
   }
 
   const getrandomRoomName = (): string => {
@@ -662,12 +659,15 @@ export default function Home() {
               <form
                 className='flex justify-center mt-5 border-4'
                 onSubmit={(event) => {
-                  Createmes(event)
-                  setAbdul((prev) => ({
-                    ...prev,
-                    refMessage: openai.message,
-                  }))
-                  openai.handleSubmit(event)
+                  event.preventDefault()
+                  if (socket && openai.message && !abdul.response) {
+                    Createmes(event)
+                    socket.emit(SocketEvents.AbdulMessage, {
+                      chatRoomId: currentChatroom,
+                      message: openai.message,
+                    })
+                    openai.handleSubmit(event)
+                  }
                 }}
               >
                 <input
@@ -695,7 +695,7 @@ export default function Home() {
                 <button
                   type='submit'
                   className='px-4 py-2 bg-pink-400'
-                  disabled={abdul.isStreaming || !openai.message}
+                  // disabled={abdul.isStreaming || !openai.message}
                 >
                   Send
                 </button>
@@ -723,23 +723,11 @@ export default function Home() {
                       </span>
                       : {data.newmessage}
                     </div>
-                    {index === currentmessage?.length - 1 && abdul.response ? (
-                      <div>
-                        <span className='bg-blue-400 px-2 h-full'>Abdul</span>:{' '}
-                        {abdul.response}
-                        {abdul.cursor && '▋'}
-                      </div>
-                    ) : (
-                      abdul.history[2 * index + 1] && (
-                        <div>
-                          <span className='bg-blue-400 px-2 h-full'>Abdul</span>
-                          : {abdul.history[2 * index + 1]?.content}
-                        </div>
-                      )
-                    )}
                   </div>
                 ))}
               </div>
+              <div>{JSON.stringify(abdul.message)}</div>
+              <div>{JSON.stringify(abdul.messages)}</div>
             </>
           )}
         </>
