@@ -43,3 +43,9 @@ body {
 .pre-wrap {
   @apply whitespace-pre-wrap break-all overflow-hidden;
 }
+
+@layer components {
+  .category-sep {
+    @apply border-gray-300 border-[2px]  p-2 rounded-xl border-solid flex-col flex justify-center items-center;
+  }
+}

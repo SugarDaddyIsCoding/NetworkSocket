@@ -55,7 +55,9 @@ export default function SocketHandler(req, res) {
 
     socket.on(
       SocketEvents.CreateChatroom,
-      ({ roomName, isAbdul }, callback) => {
+      ({ roomName, isAbdul, trueIndexes }, callback) => {
+        console.log('WTF ', trueIndexes)
+
         //create new chatroom and put that client into the new created chatroom
         socket.join(startchatroomid.toString())
         const existingUser = onlineClients.get(socket.id)
@@ -70,6 +72,7 @@ export default function SocketHandler(req, res) {
           member: [socket.id],
           roomName,
           isAbdul,
+          category: trueIndexes,
         })
 
         //console.log("in socket.io handler");
@@ -80,7 +83,11 @@ export default function SocketHandler(req, res) {
         //console.logonlineClients.values());
 
         //console.log("joined!!");
-        callback({ socketid: startchatroomid.toString(), roomName })
+        callback({
+          socketid: startchatroomid.toString(),
+          roomName,
+          trueIndexes,
+        })
 
         startchatroomid++ //make this is unique
       }

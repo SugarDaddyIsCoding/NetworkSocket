@@ -4,6 +4,17 @@ import io from 'socket.io-client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { SocketEvents } from '@/types/events'
 import { Button, Form, Modal } from 'react-bootstrap'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  fa0,
+  faBook,
+  faBookAtlas,
+  faComment,
+  faGamepad,
+  faGraduationCap,
+  faHamburger,
+  faLandmark,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   uniqueNamesGenerator,
   Config,
@@ -12,6 +23,7 @@ import {
   animals,
 } from 'unique-names-generator'
 import { runCleanup } from './api/socket'
+import { SORRY } from '@/ไกลๆ/anim'
 import { useOpenAI } from '@/hooks/useOpenAI'
 import { useInterval } from '@/hooks/useInterval'
 import { Abdul } from '@/types/abdul'
@@ -37,6 +49,9 @@ export default function Home() {
   const [typingUsers, setTypingUsers] = useState<string>('')
   const [meName, setMeName] = useState<string | null>(null)
   const [theme, setTheme] = useState(true) //true = dark mode
+  const [currentCa, setCurrentCa] = useState()
+
+  const [category, setCategory] = useState(Array(4).fill(false))
 
   // states and hook for a create-and-join-room modal
   const [show, setShow] = useState(false)
@@ -180,13 +195,27 @@ export default function Home() {
         ? getrandomRoomName()
         : event.target.chatroomNameInput.value
     console.log(roomName)
+
+    const trueIndexes: number[] = []
+
+    category.forEach((val, index) => {
+      if (val) {
+        trueIndexes.push(index)
+      }
+    })
+
+    setCategory(new Array(category.length).fill(false))
+    console.log(trueIndexes)
+
     if (socket) {
       socket.emit(
         SocketEvents.CreateChatroom,
-        { roomName, isAbdul: abdul.isModal },
+        { roomName, isAbdul: abdul.isModal, trueIndexes },
         (response) => {
           setCurrentchatroom(response.socketid)
           setCurrentRoomname(response.roomName)
+          setCurrentCa(response.trueIndexes)
+
           setAbdul((prev) => ({ ...prev, isChatRoom: abdul.isModal }))
           setMode(2)
           setShow(false)
@@ -209,6 +238,14 @@ export default function Home() {
     setMeName(newusername)
   }
 
+  const handleCategoryClick = (index) => {
+    setCategory((prevState) => {
+      const newState = [...prevState]
+      newState[index] = !newState[index]
+      return newState
+    })
+  }
+
   const Createmes = async (event) => {
     event.preventDefault()
     const messagedata = {
@@ -223,6 +260,53 @@ export default function Home() {
       console.log('no socket')
     }
     event.target.chatmessage.value = ''
+  }
+
+  function getFontAwesomeIcon(index: number, mode: boolean) {
+    switch (index) {
+      case 0:
+        return (
+          <div
+            className={
+              'category-sep bg-purple-500 ' + (mode ? 'w-20 h-16' : 'h-10 w-10')
+            }
+          >
+            <FontAwesomeIcon icon={faGamepad} className='' />
+          </div>
+        )
+      case 1:
+        return (
+          <div
+            className={
+              'category-sep bg-sky-500 ' + (mode ? 'w-20 h-16' : 'h-10 w-10')
+            }
+          >
+            <FontAwesomeIcon icon={faBookAtlas} className='' />
+          </div>
+        )
+      case 2:
+        return (
+          <div
+            className={
+              'category-sep bg-teal-400 ' + (mode ? 'w-20 h-16' : 'h-10 w-10')
+            }
+          >
+            <FontAwesomeIcon icon={faComment} className='' />
+          </div>
+        )
+      case 3:
+        return (
+          <div
+            className={
+              'category-sep bg-red-500 ' + (mode ? 'w-20 h-16' : 'h-10 w-10')
+            }
+          >
+            <FontAwesomeIcon icon={faLandmark} className='' />
+          </div>
+        )
+      default:
+        return null
+    }
   }
 
   return (
@@ -246,7 +330,7 @@ export default function Home() {
         <div className='flex pt-5 items-center justify-center '>
           <div>
             <h1 className='text-4xl mb-5 flex justify-center items-center'>
-              I want it that way{' '}
+              I want it that way
             </h1>
             <form onSubmit={Createuser}>
               <label className=''>Set Nickname</label>
@@ -309,205 +393,7 @@ export default function Home() {
                       <div className='bg-pink-500 px-4 pb-4 pt-5 sm:p-6 sm:pb-4'>
                         <div className='sm:flex sm:items-start'>
                           <div className='mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10'>
-                            <svg
-                              viewBox='0 0 100 100'
-                              width='100%'
-                              height='100%'
-                              style={{ overflow: 'visible' }}
-                            >
-                              <circle cx='50' cy='50' r='50' fill='transparent'>
-                                <animate
-                                  attributeName='fill'
-                                  from='transparent'
-                                  to='#ffc10714'
-                                  dur='1s'
-                                  begin='0s'
-                                  repeatCount='1'
-                                  fill='freeze'
-                                />
-                              </circle>
-
-                              <g>
-                                <line
-                                  x1='0'
-                                  y1='50'
-                                  x2='100'
-                                  y2='50'
-                                  stroke='#795548ad'
-                                  strokeOpacity='0'
-                                  strokeDasharray='4'
-                                >
-                                  <animate
-                                    attributeName='stroke-opacity'
-                                    to='0.8'
-                                    dur='2s'
-                                    begin='0s'
-                                    repeatCount='1'
-                                    fill='freeze'
-                                  />
-                                </line>
-
-                                <circle cx='100' cy='50' r='3' fill='green'>
-                                  <animate
-                                    attributeName='cx'
-                                    dur='6s'
-                                    begin='2s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='100;0;100'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                  <animate
-                                    attributeName='cy'
-                                    dur='6s'
-                                    begin='2s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='50;50;50'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                </circle>
-                              </g>
-
-                              <g>
-                                <line
-                                  x1='50'
-                                  y1='0'
-                                  x2='50'
-                                  y2='100'
-                                  stroke='#795548ad'
-                                  strokeOpacity='0'
-                                  strokeDasharray='4'
-                                >
-                                  <animate
-                                    attributeName='stroke-opacity'
-                                    to='0.8'
-                                    dur='2s'
-                                    begin='0s'
-                                    repeatCount='1'
-                                    fill='freeze'
-                                  />
-                                </line>
-
-                                <circle cx='50' cy='100' r='3' fill='red'>
-                                  <animate
-                                    attributeName='cx'
-                                    dur='6s'
-                                    begin='6.5s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='50;50;50'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                  <animate
-                                    attributeName='cy'
-                                    dur='6s'
-                                    begin='6.5s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='100;0;100'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                </circle>
-                              </g>
-
-                              <g id='135deg'>
-                                <line
-                                  x1='14.64'
-                                  y1='14.64'
-                                  x2='85.35'
-                                  y2='85.35'
-                                  stroke='#795548ad'
-                                  strokeOpacity='0'
-                                  strokeDasharray='4'
-                                >
-                                  <animate
-                                    attributeName='stroke-opacity'
-                                    to='0.8'
-                                    dur='2s'
-                                    begin='0s'
-                                    repeatCount='1'
-                                    fill='freeze'
-                                  />
-                                </line>
-
-                                <circle cx='85.35' cy='85.35' r='3' fill='blue'>
-                                  <animate
-                                    attributeName='cx'
-                                    dur='6s'
-                                    begin='7.5s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='85.35;14.64;85.35'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                  <animate
-                                    attributeName='cy'
-                                    dur='6s'
-                                    begin='7.5s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='85.35;14.64;85.35'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                </circle>
-                              </g>
-
-                              <g id='45deg'>
-                                <line
-                                  x1='85.35'
-                                  y1='14.64'
-                                  x2='14.64'
-                                  y2='85.35'
-                                  stroke='#795548ad'
-                                  strokeOpacity='0'
-                                  strokeDasharray='4'
-                                >
-                                  <animate
-                                    attributeName='stroke-opacity'
-                                    to='0.8'
-                                    dur='2s'
-                                    begin='0s'
-                                    repeatCount='1'
-                                    fill='freeze'
-                                  />
-                                </line>
-
-                                <circle
-                                  cx='85.35'
-                                  cy='14.64'
-                                  r='3'
-                                  fill='orange'
-                                >
-                                  <animate
-                                    attributeName='cx'
-                                    dur='6s'
-                                    begin='8.5s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='85.35;14.64;85.35'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                  <animate
-                                    attributeName='cy'
-                                    dur='6s'
-                                    begin='8.5s'
-                                    calcMode='spline'
-                                    repeatCount='indefinite'
-                                    values='14.64;85.35;14.64'
-                                    keyTimes='0;0.5;1'
-                                    keySplines='0.42 0 0.58 1; 0.42 0 0.58 1'
-                                  />
-                                </circle>
-                              </g>
-                            </svg>
+                            <SORRY />
                           </div>
                           <div className='mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-grow'>
                             <h3
@@ -529,6 +415,50 @@ export default function Home() {
                                   placeholder='room name'
                                   ref={roomNameInputRef}
                                 ></input>
+                              </div>
+                            </div>
+                            <div className='flex justify-between text-sm  mr-5'>
+                              <div
+                                className={
+                                  ' category-sep w-20 h-16 ' +
+                                  (category[0] ? 'bg-purple-500 scale-105' : '')
+                                }
+                                onClick={() => handleCategoryClick(0)}
+                              >
+                                {' '}
+                                <FontAwesomeIcon icon={faGamepad} size='xl' />
+                                <div>Gaming</div>
+                              </div>
+                              <div
+                                className={
+                                  ' category-sep w-20 h-16 ' +
+                                  (category[1] ? 'bg-sky-500 scale-105' : '')
+                                }
+                                onClick={() => handleCategoryClick(1)}
+                              >
+                                {' '}
+                                <FontAwesomeIcon icon={faBookAtlas} size='xl' />
+                                <div>Studying</div>
+                              </div>
+                              <div
+                                className={
+                                  ' category-sep w-20 h-16 ' +
+                                  (category[2] ? 'bg-teal-400 scale-105' : '')
+                                }
+                                onClick={() => handleCategoryClick(2)}
+                              >
+                                <FontAwesomeIcon icon={faComment} size='xl' />
+                                <div>Chilling</div>
+                              </div>
+                              <div
+                                className={
+                                  ' category-sep w-20 h-16 ' +
+                                  (category[3] ? 'bg-red-500 scale-105' : '')
+                                }
+                                onClick={() => handleCategoryClick(3)}
+                              >
+                                <FontAwesomeIcon icon={faLandmark} size='xl' />
+                                <div>Politic</div>
                               </div>
                             </div>
                           </div>
@@ -593,6 +523,16 @@ export default function Home() {
                 <div>
                   Chatroom ID: {data.chatroomid} with size {data.member.length}
                 </div>
+                <div className='flex mt-2 items-center justify-start  flex-row'>
+                  Topic:
+                  {data.category?.map((data) => (
+                    <div className='px-2' key={data}>
+                      {' '}
+                      {getFontAwesomeIcon(data, false)}
+                    </div>
+                  ))}
+                </div>
+
                 <div className='flex mt-5 justify-center items-end'>
                   <button
                     onClick={() => {
@@ -608,6 +548,7 @@ export default function Home() {
                           ...prev,
                           isChatRoom: data.isAbdul,
                         }))
+                        setCurrentCa(data.category)
                         setMode(2)
                       } else {
                         alert('create client first')
@@ -654,6 +595,16 @@ export default function Home() {
             {/* #CHATROOM ID */}
             <h1 className='flex justify-center items-center text-4xl  '>
               Chatroom ID: {currentChatroom}
+              <div className='flex flex-row text-4xl ml-10 items-center'>
+                {currentCa?.map((data) => {
+                  return (
+                    <div className='px-2 ' key={data}>
+                      {' '}
+                      {getFontAwesomeIcon(data, true)}
+                    </div>
+                  )
+                })}
+              </div>
             </h1>
           </div>
           {/* #MESSAGE BAR */}

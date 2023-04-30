@@ -19,7 +19,15 @@ declare global {
 export const startchatroomid = global.startchatroomid
 export const onlineChatroom =
   global.onlineChatroom ||
-  new Map<string, { chatroomid: string; member: string[]; roomName: string }>() //Create a  new map to save a chatroom and all the client in each on
+  new Map<
+    string,
+    {
+      chatroomid: string
+      member: string[]
+      roomName: string
+      category: Array<number>
+    }
+  >() //Create a  new map to save a chatroom and all the client in each on
 export const onlineClients = global.onlineClients || new Map<any, any>()
 export const cleanupInit = global.cleanupInit
 // export const io = global.io || new Server(res.socket.server);
