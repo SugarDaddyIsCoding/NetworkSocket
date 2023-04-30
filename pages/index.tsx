@@ -695,7 +695,7 @@ export default function Home() {
                 <button
                   type='submit'
                   className='px-4 py-2 bg-pink-400'
-                  disabled={openai.isStreaming || !openai.message}
+                  disabled={abdul.isStreaming || !openai.message}
                 >
                   Send
                 </button>
@@ -740,20 +740,6 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <div>Message: {openai.message}</div>
-              <div>
-                Response: {openai.response}
-                {openai.cursor && '▋'}
-              </div>
-              <div>
-                Shared: {abdul.response}
-                {abdul.cursor && '▋'}
-              </div>
-              <div>{JSON.stringify(openai.isStreaming)}</div>
-              <div>{JSON.stringify(abdul.isStreaming)}</div>
-              <div>{JSON.stringify(abdul.refMessage)}</div>
-              <div>{JSON.stringify(abdul.refResponse)}</div>
-              <div>{JSON.stringify(abdul.history)}</div>
             </>
           )}
         </>
