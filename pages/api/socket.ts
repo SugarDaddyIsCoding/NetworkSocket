@@ -12,9 +12,6 @@ let userTimers = new Map<string, NodeJS.Timeout | undefined>()
 let typingUsers = new Array<string>()
 const typingTimeout = 5000
 
-// Busy abdul
-let abdulBusy = new Array<boolean>(10000)
-
 export default function SocketHandler(req, res) {
   // It means that socket server was already initialised
   if (res.socket.server.io) {
@@ -199,19 +196,39 @@ export default function SocketHandler(req, res) {
 
     // ABDUL: Broadcast abdul response for every users in the same chatroom
     socket.on(
-      SocketEvents.BroadcastAbdulResponse,
-      (data: { chatRoomId: number; response: string }) => {
-        if (abdulBusy[data.chatroomId]) return
+      SocketEvents.AskAbdul,
+      ({
+        chatRoomId,
+        isStreaming,
+        refMessage,
+        response,
+        cursor,
+      }: {
+        chatRoomId: string
+        isStreaming: boolean
+        refMessage: string
+        response: string
+        cursor: boolean
+      }) => {
+        console.log({
+          chatRoomId,
+          isStreaming,
+          refMessage,
+          response,
+          cursor,
+        })
+        io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulResponse, {
+          isStreaming,
+          refMessage,
+          response,
+          cursor,
+        })
       }
     )
 
-    // ABDUL: Update busy status of abdul
-    socket.on(SocketEvents.UpdateAbdulBusy, (roomId: number) => {
-      if (abdulBusy[roomId]) return
-    })
-
     socket.on(SocketEvents.Typing, () => {
       // delete countdown timer if any
+
       const me: string = socket.id
       clearTimeout(userTimers.get(me))
       userTimers.set(me, undefined)

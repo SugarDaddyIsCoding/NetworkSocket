@@ -3,23 +3,26 @@ import { yieldStream } from 'yield-stream'
 import { useEffect, useState } from 'react'
 import { useInterval } from './useInterval'
 
+interface OpenAIOptions {
+  history?: ChatCompletionRequestMessage[]
+}
+
 /**
  * Hello world
  *
  * @returns Everything needed for an OpenAI form
  *
  */
-export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
+export function useOpenAI(options?: OpenAIOptions) {
   // state hooks
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
   const [isStreaming, setStreaming] = useState(false)
-  const [isBlinking, setBlinking] = useState(false)
-  const cursor = isStreaming && isBlinking
+  const [cursor, setCursor] = useState(false)
 
   // pass to api
   const [messages, setMessages] = useState(
-    history || new Array<ChatCompletionRequestMessage>()
+    options?.history || new Array<ChatCompletionRequestMessage>()
   )
 
   // input change
@@ -63,8 +66,11 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
       console.error(error)
     }
 
-    setMessages([...tmp])
+    setResponse('')
     setStreaming(false)
+    if (!history) {
+      setMessages([...tmp])
+    }
   }
 
   useEffect(() => {
@@ -75,7 +81,9 @@ export function useOpenAI(history?: ChatCompletionRequestMessage[]) {
 
   useInterval(() => {
     if (isStreaming) {
-      setBlinking((prev) => !prev)
+      setCursor((prev) => !prev)
+    } else {
+      setCursor(false)
     }
   }, 400)
 

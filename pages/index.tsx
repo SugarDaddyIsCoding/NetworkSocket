@@ -42,18 +42,78 @@ export default function Home() {
   const [show, setShow] = useState(false)
   const handleClose = () => {
     setShow(false)
-    setAbdul((prev) => ({ ...prev, isModal: false }))
+    resetAbdul()
   }
   const handleShow = () => setShow(true)
   const [anim, setAnim] = useState(false)
   const roomNameInputRef = useRef<HTMLInputElement>(null)
 
   // states for chat-with-abdul
-  const openai = useOpenAI()
   const [abdul, setAbdul] = useState<Abdul>({
     isModal: false,
     isChatRoom: false,
+    isStreaming: false,
+    history: [],
+    response: '',
+    refMessage: '',
+    refResponse: '',
+    cursor: false,
   })
+
+  const resetAbdul = () => {
+    setAbdul({
+      isModal: false,
+      isChatRoom: false,
+      isStreaming: false,
+      history: [],
+      response: '',
+      refMessage: '',
+      refResponse: '',
+      cursor: false,
+    })
+  }
+
+  const openai = useOpenAI({ history: abdul.history })
+
+  useEffect(() => {
+    if (socket) {
+      const data = {
+        chatRoomId: currentChatroom,
+        isStreaming: openai.isStreaming,
+        refMessage: abdul.refMessage,
+        response: openai.response,
+        cursor: openai.cursor,
+      }
+      console.log(data)
+      socket.emit(SocketEvents.AskAbdul, data)
+    }
+  }, [socket, openai.response])
+
+  useEffect(() => {
+    if (abdul.response) {
+      setAbdul((prev) => ({
+        ...prev,
+        refResponse: abdul.response,
+      }))
+    }
+  }, [abdul.response])
+
+  useEffect(() => {
+    if (!abdul.isStreaming) {
+      setAbdul((prev) =>
+        abdul.refMessage && abdul.refResponse
+          ? {
+              ...prev,
+              history: [
+                ...prev.history,
+                { role: 'user', content: abdul.refMessage },
+                { role: 'assistant', content: abdul.refResponse },
+              ],
+            }
+          : { ...prev }
+      )
+    }
+  }, [abdul.isStreaming])
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -84,6 +144,21 @@ export default function Home() {
           .toString()
       )
     })
+
+    // Abdul
+    socket.on(
+      SocketEvents.BroadcastAbdulResponse,
+      ({ isStreaming, refMessage, response, cursor }) => {
+        console.log('abc')
+        setAbdul((prev) => ({
+          ...prev,
+          isStreaming,
+          refMessage,
+          response,
+          cursor,
+        }))
+      }
+    )
   }
 
   const getrandomRoomName = (): string => {
@@ -121,7 +196,7 @@ export default function Home() {
       alert('create client first')
       setMode(0)
     }
-    setAbdul((prev) => ({ ...prev, isModal: false }))
+    resetAbdul()
   }
 
   const Createuser = async (event) => {
@@ -148,24 +223,6 @@ export default function Home() {
       console.log('no socket')
     }
     event.target.chatmessage.value = ''
-  }
-
-  const askAbdul = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    // if (socket) {
-    // while (!openai.isStreaming);
-    console.log(openai.isStreaming)
-    // while (openai.isStreaming) {
-    //   console.log(openai.response)
-    //   // const data = {
-    //   //   chatRoomId: currentChatroom,
-    //   //   response: abdul.response,
-    //   // }
-    //   // socket.emit(SocketEvents.BroadcastAbdulResponse)
-    // }
-    // } else {
-    //   console.log('no socket')
-    // }
   }
 
   return (
@@ -583,6 +640,7 @@ export default function Home() {
               onClick={() => {
                 if (socket) {
                   socket.emit(SocketEvents.LeaveRoom, currentChatroom)
+                  resetAbdul()
                   setCurrentmessage([])
                   setMode(1)
                 } else {
@@ -639,7 +697,7 @@ export default function Home() {
                 {currentmessage?.map((data, index) => (
                   <div
                     className=' bg-opacity-80 bg-green-500 w-auto py-1 px-2'
-                    key={data}
+                    key={`${socket?.id}-${index}`}
                   >
                     <span className='bg-blue-400 px-2 py-1'>{data.sender}</span>
                     : {data.newmessage}
@@ -653,8 +711,12 @@ export default function Home() {
               <form
                 className='flex justify-center mt-5 border-4'
                 onSubmit={(event) => {
+                  Createmes(event)
+                  setAbdul((prev) => ({
+                    ...prev,
+                    refMessage: openai.message,
+                  }))
                   openai.handleSubmit(event)
-                  askAbdul(event)
                 }}
               >
                 <input
@@ -666,8 +728,11 @@ export default function Home() {
                       : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
                   }
                   onChange={(event) => {
+                    // console.log('as')
                     openai.handleChange(event)
-                    // socket.emit(SocketEvents.Typing)
+                    if (socket) {
+                      socket.emit(SocketEvents.Typing)
+                    }
                   }}
                 />
                 <input
@@ -676,7 +741,11 @@ export default function Home() {
                   value={currentChatroom}
                   readOnly
                 ></input>
-                <button className='px-4 py-2 bg-pink-400' disabled={false}>
+                <button
+                  type='submit'
+                  className='px-4 py-2 bg-pink-400'
+                  disabled={openai.isStreaming || !openai.message}
+                >
                   Send
                 </button>
                 {/* #IS TYPING */}
@@ -695,16 +764,27 @@ export default function Home() {
                 {currentmessage?.map((data, index) => (
                   <div
                     className=' bg-opacity-80 bg-green-500 w-auto py-1 px-2'
-                    key={data}
+                    key={`${socket?.id}-${index}`}
                   >
                     <span className='bg-blue-400 px-2 py-1'>{data.sender}</span>
                     : {data.newmessage}
                   </div>
                 ))}
               </div>
-              <div>{openai.message}</div>
-              <div>{openai.response}</div>
+              <div>Message: {openai.message}</div>
+              <div>
+                Response: {openai.response}
+                {openai.cursor && '▋'}
+              </div>
+              <div>
+                Shared: {abdul.response}
+                {abdul.cursor && '▋'}
+              </div>
               <div>{JSON.stringify(openai.isStreaming)}</div>
+              <div>{JSON.stringify(abdul.isStreaming)}</div>
+              <div>{JSON.stringify(abdul.refMessage)}</div>
+              <div>{JSON.stringify(abdul.refResponse)}</div>
+              <div>{JSON.stringify(abdul.history)}</div>
             </>
           )}
         </>
