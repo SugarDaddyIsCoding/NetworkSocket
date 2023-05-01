@@ -802,19 +802,6 @@ export default function Home() {
                   )}
                 </div>
               </div>
-              <div>1{JSON.stringify(openai.messages)}</div>
-              <div>2{JSON.stringify(openai.message)}</div>
-              <div>3{JSON.stringify(openai.messageRef)}</div>
-              <div>4{JSON.stringify(openai.response)}</div>
-              <div>5{JSON.stringify(openai.responseRef)}</div>
-              <div>------------------------------------------</div>
-              <div>1{JSON.stringify(meName)}</div>
-              <div>1{JSON.stringify(abdul.nameRef)}</div>
-              <div>1{JSON.stringify(abdul.messages)}</div>
-              <div>2{JSON.stringify(abdul.message)}</div>
-              <div>3{JSON.stringify(abdul.messageRef)}</div>
-              <div>4{JSON.stringify(abdul.response)}</div>
-              <div>5{JSON.stringify(abdul.responseRef)}</div>
             </>
           )}
         </>
