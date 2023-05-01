@@ -163,7 +163,7 @@ export default function SocketHandler(req, res) {
 
       //remove him from the typingUsers List
       typingUsers = typingUsers.filter((userId) => userId !== socket.id)
-      io.emit(SocketEvents.UpdateTypingUsers, {
+      io.in(chatroomid).emit(SocketEvents.UpdateTypingUsers, {
         typingUsers: typingUsers.map((u) => [
           u,
           onlineClients.get(u).username as string,
@@ -174,15 +174,6 @@ export default function SocketHandler(req, res) {
     })
 
     socket.on(SocketEvents.SendMessage, (messagedata) => {
-      //remove him from the typingUsers List
-      typingUsers = typingUsers.filter((userId) => userId !== socket.id)
-      io.emit(SocketEvents.UpdateTypingUsers, {
-        typingUsers: typingUsers.map((u) => [
-          u,
-          onlineClients.get(u).username as string,
-        ]),
-      })
-
       //need to check if that user is in that chatroom
 
       const currentclient = onlineClients.get(socket.id)
@@ -196,6 +187,15 @@ export default function SocketHandler(req, res) {
           SocketEvents.BroadCastMessage,
           tosend
         )
+
+        // when a user sends a message, remove him from the typingUsers List
+        typingUsers = typingUsers.filter((userId) => userId !== socket.id)
+        io.in(messagedata.chatroomid).emit(SocketEvents.UpdateTypingUsers, {
+          typingUsers: typingUsers.map((u) => [
+            u,
+            onlineClients.get(u).username as string,
+          ]),
+        })
       } else {
         //console.log("can't send not in this chatroom");
       }
@@ -226,7 +226,7 @@ export default function SocketHandler(req, res) {
       }
     )
 
-    socket.on(SocketEvents.Typing, () => {
+    socket.on(SocketEvents.Typing, (chatroomId: string) => {
       // delete countdown timer if any
 
       const me: string = socket.id
@@ -242,7 +242,7 @@ export default function SocketHandler(req, res) {
       //console.log(typingUsers);
 
       // emit an updateTypers event to client
-      io.emit(SocketEvents.UpdateTypingUsers, {
+      io.in(chatroomId).emit(SocketEvents.UpdateTypingUsers, {
         typingUsers: typingUsers.map((u) => [u, onlineClients.get(u).username]),
       })
 
@@ -256,18 +256,18 @@ export default function SocketHandler(req, res) {
       //
       // so even though me would change later, the current me that is passed when setTimeout is called will be used.
       let timerId = setTimeout(
-        ((me: string): (() => void) => {
+        ((me: string, chatroomId: string): (() => void) => {
           return () => {
             //console.log("typing timeout for ", me);
             typingUsers = typingUsers.filter((userId) => userId !== me)
-            io.emit(SocketEvents.UpdateTypingUsers, {
+            io.in(chatroomId).emit(SocketEvents.UpdateTypingUsers, {
               typingUsers: typingUsers.map((u) => [
                 u,
                 onlineClients.get(u).username as string,
               ]),
             })
           }
-        })(me),
+        })(me, chatroomId),
         typingTimeout
       )
 
