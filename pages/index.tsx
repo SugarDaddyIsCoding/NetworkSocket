@@ -27,6 +27,8 @@ import { SORRY } from '@/ไกลๆ/anim'
 import { useOpenAI } from '@/hooks/useOpenAI'
 import { useInterval } from '@/hooks/useInterval'
 import { Abdul } from '@/types/abdul'
+import { v4 as uuid } from 'uuid'
+
 let socket
 
 export default function Home() {
@@ -65,6 +67,8 @@ export default function Home() {
 
   // states for chat-with-abdul
   const [abdul, setAbdul] = useState<Abdul>({
+    mIdRef: null,
+    rIdRef: null,
     isModal: false,
     isChatRoom: false,
     nameRef: '',
@@ -78,6 +82,8 @@ export default function Home() {
 
   const resetAbdul = () => {
     setAbdul({
+      mIdRef: null,
+      rIdRef: null,
       isModal: false,
       isChatRoom: false,
       nameRef: '',
@@ -107,11 +113,12 @@ export default function Home() {
     if (socket && !openai.message && openai.response) {
       socket.emit(SocketEvents.AbdulMessage, {
         chatRoomId: currentChatroom,
+        nameRef: meName || 'test',
         message: openai.message,
         messageRef: openai.messageRef,
       })
     }
-  }, [socket, !!openai.message, openai.response])
+  }, [socket, !!openai.message, !!openai.response])
 
   useEffect(() => {
     if (socket && !abdul.message && abdul.response) {
@@ -121,7 +128,7 @@ export default function Home() {
           ...prev.messages,
           {
             role: 'user',
-            name: 'test',
+            name: abdul.nameRef,
             content: abdul.messageRef,
           },
         ],
@@ -175,14 +182,18 @@ export default function Home() {
     })
 
     // Abdul
-    socket.on(SocketEvents.BroadcastAbdulMessage, ({ message, messageRef }) => {
-      console.log('on: BroadcastAbdulMessage')
-      setAbdul((prev) => ({
-        ...prev,
-        message,
-        messageRef,
-      }))
-    })
+    socket.on(
+      SocketEvents.BroadcastAbdulMessage,
+      ({ nameRef, message, messageRef }) => {
+        console.log('on: BroadcastAbdulMessage')
+        setAbdul((prev) => ({
+          ...prev,
+          nameRef,
+          message,
+          messageRef,
+        }))
+      }
+    )
 
     // Abdul
     socket.on(
@@ -336,8 +347,8 @@ export default function Home() {
     <div
       className={
         theme
-          ? ' bg-slate-950 text-white w-screen h-screen relative'
-          : ' bg-white text-black w-screen h-screen relative'
+          ? ' bg-slate-950 text-white w-screen min-h-screen relative'
+          : ' bg-white text-black w-screen min-h-screen relative'
       }
     >
       <button
@@ -687,7 +698,7 @@ export default function Home() {
                 onSubmit={(event) => {
                   event.preventDefault()
                   if (socket && openai.message && !abdul.response) {
-                    Createmes(event)
+                    // Createmes(event)
                     console.log('submit form', {
                       chatRoomId: currentChatroom,
                       message: openai.message,
@@ -744,19 +755,33 @@ export default function Home() {
                 Message In Chatroom
               </h1>
               <div className='mt-5 mx-10'>
-                {currentmessage?.map((data, index) => (
-                  <div
-                    className='flex flex-col gap-1 bg-opacity-80 bg-green-500 w-auto py-1 px-2'
-                    key={`${socket?.id}-${index}`}
-                  >
-                    <div>
+                <div
+                  className='flex flex-col gap-1 bg-opacity-80 bg-green-500 w-auto'
+                  style={{
+                    padding:
+                      abdul.messages.length === 0
+                        ? '0 8px 0 8px'
+                        : '4px 8px 4px 8px',
+                  }}
+                >
+                  {abdul.messages?.map((message, idx) => (
+                    <div key={`${socket?.id}-${idx}`}>
                       <span className='bg-blue-400 px-2 h-full'>
-                        {data.sender}
+                        {message.role === 'user' ? message.name : 'Abdul'}
                       </span>
-                      : {data.newmessage}
+                      <span>: {message.content}</span>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                  {abdul.response && (
+                    <div>
+                      <span className='bg-blue-400 px-2 h-full'>Abdul</span>
+                      <span>
+                        : {abdul.response}
+                        {abdul.cursor && '▋'}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>1{JSON.stringify(openai.messages)}</div>
               <div>2{JSON.stringify(openai.message)}</div>
@@ -764,6 +789,8 @@ export default function Home() {
               <div>4{JSON.stringify(openai.response)}</div>
               <div>5{JSON.stringify(openai.responseRef)}</div>
               <div>------------------------------------------</div>
+              <div>1{JSON.stringify(meName)}</div>
+              <div>1{JSON.stringify(abdul.nameRef)}</div>
               <div>1{JSON.stringify(abdul.messages)}</div>
               <div>2{JSON.stringify(abdul.message)}</div>
               <div>3{JSON.stringify(abdul.messageRef)}</div>

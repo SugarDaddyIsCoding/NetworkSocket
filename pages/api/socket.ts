@@ -206,19 +206,27 @@ export default function SocketHandler(req, res) {
     socket.on(
       SocketEvents.AbdulMessage,
       ({
+        mIdRef,
         chatRoomId,
         nameRef,
         message,
         messageRef,
       }: {
+        mIdRef: string
         chatRoomId: string
-        nameRef?: string
+        nameRef: string
         message: string
         messageRef: string
       }) => {
-        console.log('on: AbdulMessage')
+        console.log('on: AbdulMessage', {
+          mIdRef,
+          nameRef,
+          message,
+          messageRef,
+        })
         io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulMessage, {
-          // nameRef,
+          mIdRef,
+          nameRef,
           message,
           messageRef,
         })
@@ -229,11 +237,13 @@ export default function SocketHandler(req, res) {
     socket.on(
       SocketEvents.AbdulResponse,
       ({
+        rIdRef,
         chatRoomId,
         response,
         responseRef,
         cursor,
       }: {
+        rIdRef: string
         chatRoomId: string
         response: string
         responseRef: string
@@ -241,6 +251,7 @@ export default function SocketHandler(req, res) {
       }) => {
         console.log('on: AbdulResponse')
         io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulResponse, {
+          rIdRef,
           response,
           responseRef,
           cursor,

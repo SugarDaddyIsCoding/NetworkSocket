@@ -2,7 +2,13 @@ import { Server, Socket } from 'socket.io'
 
 export type onlineChatroomT = Map<
   string,
-  { chatroomid: string; member: string[]; roomName: string }
+  {
+    chatroomid: string
+    member: string[]
+    roomName: string
+    isAbdul: boolean
+    category: number[]
+  }
 >
 // export type onlineClientsT
 
