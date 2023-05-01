@@ -18,6 +18,7 @@ export function useOpenAI(options?: OpenAIOptions) {
   const messages =
     options?.messages ?? new Array<ChatCompletionRequestMessage>()
 
+  const [isError, setError] = useState(false)
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
   const [messageRef, setMessageRef] = useState('')
@@ -25,10 +26,14 @@ export function useOpenAI(options?: OpenAIOptions) {
   const [toggle, setToggle] = useState(false)
   const cursor = !!response && toggle
 
-  // useEffect(() => {
-  //   if (!response) {
-  //   }
-  // }, [response])
+  const reset = () => {
+    setError(false)
+    setMessage('')
+    setResponse('')
+    setMessageRef('')
+    setResponseRef('')
+    setToggle(false)
+  }
 
   // input change
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,6 +44,7 @@ export function useOpenAI(options?: OpenAIOptions) {
     event?.preventDefault()
     setMessageRef(message)
     setMessage('')
+    setError(false)
 
     const tmp = [...messages]
     tmp.push({
@@ -66,12 +72,12 @@ export function useOpenAI(options?: OpenAIOptions) {
       for await (const chunk of yieldStream(_response.body)) {
         const decodedChunk = String.fromCharCode(...Array.from(chunk))
         buffer += decodedChunk
-        // set
         setResponse(buffer)
       }
       setResponseRef(buffer)
     } catch (error) {
       console.error(error)
+      setError(true)
     }
     setResponse('')
   }
@@ -83,13 +89,18 @@ export function useOpenAI(options?: OpenAIOptions) {
   }, 400)
 
   return {
+    isError,
+    setError,
     messages,
     message,
     response,
     messageRef,
     responseRef,
+    setMessageRef,
+    setResponseRef,
     handleChange,
     handleSubmit,
     cursor,
+    reset,
   }
 }

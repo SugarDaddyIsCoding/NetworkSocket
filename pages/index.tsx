@@ -94,6 +94,7 @@ export default function Home() {
       responseRef: '',
       cursor: false,
     })
+    openai.reset()
   }
 
   const openai = useOpenAI({ messages: abdul.messages })
@@ -111,7 +112,9 @@ export default function Home() {
 
   useEffect(() => {
     if (socket && !openai.message && openai.response) {
+      console.log('testt')
       socket.emit(SocketEvents.AbdulMessage, {
+        mIdRef: uuid(),
         chatRoomId: currentChatroom,
         nameRef: meName || 'test',
         message: openai.message,
@@ -133,8 +136,9 @@ export default function Home() {
           },
         ],
       }))
+      openai.setMessageRef(abdul.messageRef)
     }
-  }, [socket, abdul.messageRef])
+  }, [socket, abdul.mIdRef])
 
   useEffect(() => {
     if (socket && abdul.responseRef) {
@@ -148,6 +152,7 @@ export default function Home() {
           },
         ],
       }))
+      openai.setResponseRef(abdul.responseRef)
     }
   }, [socket, abdul.responseRef])
 
@@ -184,10 +189,11 @@ export default function Home() {
     // Abdul
     socket.on(
       SocketEvents.BroadcastAbdulMessage,
-      ({ nameRef, message, messageRef }) => {
+      ({ mIdRef, nameRef, message, messageRef }) => {
         console.log('on: BroadcastAbdulMessage')
         setAbdul((prev) => ({
           ...prev,
+          mIdRef,
           nameRef,
           message,
           messageRef,
@@ -198,10 +204,11 @@ export default function Home() {
     // Abdul
     socket.on(
       SocketEvents.BroadcastAbdulResponse,
-      ({ response, responseRef, cursor }) => {
+      ({ rIdRef, response, responseRef, cursor }) => {
         console.log('on: BroadcastAbdulResponse')
         setAbdul((prev) => ({
           ...prev,
+          rIdRef,
           response,
           responseRef,
           cursor,
@@ -644,10 +651,7 @@ export default function Home() {
           {/* #MESSAGE BAR */}
           {!abdul.isChatRoom ? (
             <>
-              <form
-                className='flex justify-center mt-5 border-4'
-                onSubmit={Createmes}
-              >
+              <form className='flex justify-center mt-5' onSubmit={Createmes}>
                 <input
                   id='chatmessage'
                   className={
@@ -667,7 +671,7 @@ export default function Home() {
                 ></input>
                 <button className='px-4 py-2 bg-pink-400'>Send</button>
                 {/* #IS TYPING */}
-                <div id='is-typing-wrapper' className='w-[60%]'>
+                <div id='is-typing-wrapper' className='w-[60%] min-h-[40px]'>
                   {typingUsers !== '' && (
                     <h1 className={theme ? '  text-white ' : ' text-black'}>
                       {typingUsers} is typing ...
@@ -694,7 +698,7 @@ export default function Home() {
             // FOR ABDUL HERE
             <>
               <form
-                className='flex justify-center mt-5 border-4'
+                className='flex justify-center mt-5'
                 onSubmit={(event) => {
                   event.preventDefault()
                   if (socket && openai.message && !abdul.response) {
@@ -713,44 +717,59 @@ export default function Home() {
                   }
                 }}
               >
-                <input
-                  id='chatmessage'
-                  value={openai.message}
+                <div className='w-full flex justify-center'>
+                  <input
+                    id='chatmessage'
+                    value={openai.message}
+                    className={
+                      theme
+                        ? 'px-4 py-2 w-[50%] bg-white bg-opacity-50 '
+                        : 'px-4 py-2 w-[50%] bg-black bg-opacity-20 '
+                    }
+                    onChange={(event) => {
+                      // console.log('as')
+                      openai.setError(false)
+                      openai.handleChange(event)
+                      if (socket) {
+                        socket.emit(SocketEvents.Typing)
+                      }
+                    }}
+                  />
+                  <input
+                    className='hidden'
+                    id='chatroomid'
+                    value={currentChatroom}
+                    readOnly
+                  ></input>
+                  <button
+                    type='submit'
+                    className='px-4 py-2 bg-pink-400'
+                    disabled={!!abdul.response || !openai.message}
+                  >
+                    Send
+                  </button>
+                </div>
+                {/* #IS TYPING */}
+              </form>
+              <div
+                id='is-typing-wrapper'
+                className='w-full flex-center flex-col'
+              >
+                {openai.isError && (
+                  <h1 className='text-red-500 min-h-[20px]'>
+                    ERROR: too many requests
+                  </h1>
+                )}
+                <h1
                   className={
                     theme
-                      ? 'px-4 py-2 w-[60%] bg-white bg-opacity-50 '
-                      : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
+                      ? '  text-white min-h-[20px]'
+                      : ' text-black  min-h-[20px]'
                   }
-                  onChange={(event) => {
-                    // console.log('as')
-                    openai.handleChange(event)
-                    if (socket) {
-                      socket.emit(SocketEvents.Typing)
-                    }
-                  }}
-                />
-                <input
-                  className='hidden'
-                  id='chatroomid'
-                  value={currentChatroom}
-                  readOnly
-                ></input>
-                <button
-                  type='submit'
-                  className='px-4 py-2 bg-pink-400'
-                  // disabled={abdul.isStreaming || !openai.message}
                 >
-                  Send
-                </button>
-                {/* #IS TYPING */}
-                <div id='is-typing-wrapper' className='w-[60%]'>
-                  {typingUsers !== '' && (
-                    <h1 className={theme ? '  text-white ' : ' text-black'}>
-                      {typingUsers} is typing ...
-                    </h1>
-                  )}
-                </div>
-              </form>
+                  {typingUsers !== '' && `${typingUsers} is typing ...`}
+                </h1>
+              </div>
               <h1 className='mt-3 text-2xl flex justify-center'>
                 Message In Chatroom
               </h1>
