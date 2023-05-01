@@ -67,9 +67,12 @@ export default function Home() {
   const [abdul, setAbdul] = useState<Abdul>({
     isModal: false,
     isChatRoom: false,
+    nameRef: '',
     messages: [],
     message: '',
     response: '',
+    messageRef: '',
+    responseRef: '',
     cursor: false,
   })
 
@@ -77,9 +80,12 @@ export default function Home() {
     setAbdul({
       isModal: false,
       isChatRoom: false,
+      nameRef: '',
       messages: [],
       message: '',
       response: '',
+      messageRef: '',
+      responseRef: '',
       cursor: false,
     })
   }
@@ -87,29 +93,56 @@ export default function Home() {
   const openai = useOpenAI({ messages: abdul.messages })
 
   useEffect(() => {
-    if (socket && openai.response) {
+    if (socket) {
       socket.emit(SocketEvents.AbdulResponse, {
         chatRoomId: currentChatroom,
         response: openai.response,
+        responseRef: openai.responseRef,
         cursor: openai.cursor,
       })
     }
   }, [socket, openai.response])
 
   useEffect(() => {
-    if (socket && abdul.message) {
+    if (socket && !openai.message && openai.response) {
+      socket.emit(SocketEvents.AbdulMessage, {
+        chatRoomId: currentChatroom,
+        message: openai.message,
+        messageRef: openai.messageRef,
+      })
+    }
+  }, [socket, !!openai.message, openai.response])
+
+  useEffect(() => {
+    if (socket && !abdul.message && abdul.response) {
       setAbdul((prev) => ({
         ...prev,
         messages: [
           ...prev.messages,
           {
             role: 'user',
-            content: abdul.message,
+            name: 'test',
+            content: abdul.messageRef,
           },
         ],
       }))
     }
-  }, [socket, abdul.message])
+  }, [socket, abdul.messageRef])
+
+  useEffect(() => {
+    if (socket && abdul.responseRef) {
+      setAbdul((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          {
+            role: 'assistant',
+            content: abdul.responseRef,
+          },
+        ],
+      }))
+    }
+  }, [socket, abdul.responseRef])
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -142,35 +175,28 @@ export default function Home() {
     })
 
     // Abdul
-    socket.on(SocketEvents.BroadcastAbdulMessage, ({ message }) => {
+    socket.on(SocketEvents.BroadcastAbdulMessage, ({ message, messageRef }) => {
       console.log('on: BroadcastAbdulMessage')
-      console.log(message)
       setAbdul((prev) => ({
         ...prev,
         message,
+        messageRef,
       }))
     })
 
     // Abdul
-    socket.on(SocketEvents.BroadcastAbdulResponse, ({ response, cursor }) => {
-      console.log('on: BroadcastAbdulResponse')
-      setAbdul((prev) => {
-        const len = prev.messages.length
-        const messages = [...prev.messages]
-        if (response) {
-          if (messages[len - 1].role === 'user') {
-            messages.push({ role: 'assistant', content: response })
-          }
-          messages[len - 1].content = response
-        }
-        return {
+    socket.on(
+      SocketEvents.BroadcastAbdulResponse,
+      ({ response, responseRef, cursor }) => {
+        console.log('on: BroadcastAbdulResponse')
+        setAbdul((prev) => ({
           ...prev,
-          messages,
           response,
+          responseRef,
           cursor,
-        }
-      })
-    })
+        }))
+      }
+    )
   }
 
   const getrandomRoomName = (): string => {
@@ -662,10 +688,16 @@ export default function Home() {
                   event.preventDefault()
                   if (socket && openai.message && !abdul.response) {
                     Createmes(event)
-                    socket.emit(SocketEvents.AbdulMessage, {
+                    console.log('submit form', {
                       chatRoomId: currentChatroom,
                       message: openai.message,
+                      messageRef: openai.messageRef,
                     })
+                    // socket.emit(SocketEvents.AbdulMessage, {
+                    //   chatRoomId: currentChatroom,
+                    //   message: openai.message,
+                    //   messageRef: openai.messageRef,
+                    // })
                     openai.handleSubmit(event)
                   }
                 }}
@@ -726,8 +758,17 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <div>{JSON.stringify(abdul.message)}</div>
-              <div>{JSON.stringify(abdul.messages)}</div>
+              <div>1{JSON.stringify(openai.messages)}</div>
+              <div>2{JSON.stringify(openai.message)}</div>
+              <div>3{JSON.stringify(openai.messageRef)}</div>
+              <div>4{JSON.stringify(openai.response)}</div>
+              <div>5{JSON.stringify(openai.responseRef)}</div>
+              <div>------------------------------------------</div>
+              <div>1{JSON.stringify(abdul.messages)}</div>
+              <div>2{JSON.stringify(abdul.message)}</div>
+              <div>3{JSON.stringify(abdul.messageRef)}</div>
+              <div>4{JSON.stringify(abdul.response)}</div>
+              <div>5{JSON.stringify(abdul.responseRef)}</div>
             </>
           )}
         </>

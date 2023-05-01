@@ -205,11 +205,22 @@ export default function SocketHandler(req, res) {
     // ABDUL: Broadcast abdul message for every users in the same chatroom
     socket.on(
       SocketEvents.AbdulMessage,
-      ({ chatRoomId, message }: { chatRoomId: string; message: string }) => {
+      ({
+        chatRoomId,
+        nameRef,
+        message,
+        messageRef,
+      }: {
+        chatRoomId: string
+        nameRef?: string
+        message: string
+        messageRef: string
+      }) => {
         console.log('on: AbdulMessage')
-        console.log({ message })
         io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulMessage, {
+          // nameRef,
           message,
+          messageRef,
         })
       }
     )
@@ -220,20 +231,18 @@ export default function SocketHandler(req, res) {
       ({
         chatRoomId,
         response,
+        responseRef,
         cursor,
       }: {
         chatRoomId: string
         response: string
+        responseRef: string
         cursor: boolean
       }) => {
         console.log('on: AbdulResponse')
-        console.log({
-          chatRoomId,
-          response,
-          cursor,
-        })
         io.in(chatRoomId).emit(SocketEvents.BroadcastAbdulResponse, {
           response,
+          responseRef,
           cursor,
         })
       }

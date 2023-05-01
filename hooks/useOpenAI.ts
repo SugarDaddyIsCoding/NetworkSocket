@@ -15,24 +15,15 @@ interface OpenAIOptions {
  */
 export function useOpenAI(options?: OpenAIOptions) {
   // state hooks
-  const [messages, setMessages] = useState(
+  const messages =
     options?.messages ?? new Array<ChatCompletionRequestMessage>()
-  )
+
   const [message, setMessage] = useState('')
   const [response, setResponse] = useState('')
-  const messageRef = useRef(message)
-  const responseRef = useRef(response)
+  const [messageRef, setMessageRef] = useState('')
+  const [responseRef, setResponseRef] = useState('')
   const [toggle, setToggle] = useState(false)
   const cursor = !!response && toggle
-
-  // add another cock cycle to remember state
-  useEffect(() => {
-    messageRef.current = message
-  }, [message])
-
-  useEffect(() => {
-    responseRef.current = response
-  }, [response])
 
   // useEffect(() => {
   //   if (!response) {
@@ -46,7 +37,7 @@ export function useOpenAI(options?: OpenAIOptions) {
 
   const handleSubmit = async (event?: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault()
-    console.log('pls')
+    setMessageRef(message)
     setMessage('')
 
     const tmp = [...messages]
@@ -54,7 +45,6 @@ export function useOpenAI(options?: OpenAIOptions) {
       role: 'user',
       content: message,
     })
-
     try {
       const _response = await fetch('http://localhost:3000/api/openai', {
         method: 'POST',
@@ -62,7 +52,6 @@ export function useOpenAI(options?: OpenAIOptions) {
           messages: tmp,
         }),
       })
-
       if (!_response.ok || !_response.body) {
         const errorText = `[${_response.status}] ${_response.statusText}`
 
@@ -73,7 +62,6 @@ export function useOpenAI(options?: OpenAIOptions) {
           throw new Error(errorText)
         }
       }
-
       let buffer = ''
       for await (const chunk of yieldStream(_response.body)) {
         const decodedChunk = String.fromCharCode(...Array.from(chunk))
@@ -81,10 +69,10 @@ export function useOpenAI(options?: OpenAIOptions) {
         // set
         setResponse(buffer)
       }
+      setResponseRef(buffer)
     } catch (error) {
       console.error(error)
     }
-
     setResponse('')
   }
 
@@ -98,8 +86,8 @@ export function useOpenAI(options?: OpenAIOptions) {
     messages,
     message,
     response,
-    messageRef: messageRef.current,
-    responseRef: responseRef.current,
+    messageRef,
+    responseRef,
     handleChange,
     handleSubmit,
     cursor,

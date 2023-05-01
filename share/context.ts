@@ -26,6 +26,7 @@ export const onlineChatroom =
       member: string[]
       roomName: string
       category: Array<number>
+      isAbdul: boolean
     }
   >() //Create a  new map to save a chatroom and all the client in each on
 export const onlineClients = global.onlineClients || new Map<any, any>()
