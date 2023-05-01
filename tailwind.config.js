@@ -6,6 +6,9 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
+    fontFamily: {
+      sans: ['"Source Sans 3"', 'sans-serif'],
+    },
     extend: {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -14,13 +17,13 @@ module.exports = {
       },
       keyframes: {
         wiggle: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" }
-        }
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
-        wiggle: "wiggle 200ms ease-in-out"
-      }
+        wiggle: 'wiggle 200ms ease-in-out',
+      },
     },
   },
   plugins: [],
