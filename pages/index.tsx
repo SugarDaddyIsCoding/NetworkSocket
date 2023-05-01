@@ -660,7 +660,7 @@ export default function Home() {
                       : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
                   }
                   onChange={(event) => {
-                    socket.emit(SocketEvents.Typing)
+                    socket.emit(SocketEvents.Typing, currentChatroom)
                   }}
                 />
                 <input
@@ -731,7 +731,7 @@ export default function Home() {
                       openai.setError(false)
                       openai.handleChange(event)
                       if (socket) {
-                        socket.emit(SocketEvents.Typing)
+                        socket.emit(SocketEvents.Typing, currentChatroom)
                       }
                     }}
                   />
