@@ -27,6 +27,8 @@ import { SORRY } from '@/ไกลๆ/anim'
 import { useOpenAI } from '@/hooks/useOpenAI'
 import { useInterval } from '@/hooks/useInterval'
 import { Abdul } from '@/types/abdul'
+import { v4 as uuid } from 'uuid'
+
 let socket
 
 export default function Home() {
@@ -65,70 +67,94 @@ export default function Home() {
 
   // states for chat-with-abdul
   const [abdul, setAbdul] = useState<Abdul>({
+    mIdRef: null,
+    rIdRef: null,
     isModal: false,
     isChatRoom: false,
-    isStreaming: false,
-    history: [],
+    nameRef: '',
+    messages: [],
+    message: '',
     response: '',
-    refMessage: '',
-    refResponse: '',
+    messageRef: '',
+    responseRef: '',
     cursor: false,
   })
 
   const resetAbdul = () => {
     setAbdul({
+      mIdRef: null,
+      rIdRef: null,
       isModal: false,
       isChatRoom: false,
-      isStreaming: false,
-      history: [],
+      nameRef: '',
+      messages: [],
+      message: '',
       response: '',
-      refMessage: '',
-      refResponse: '',
+      messageRef: '',
+      responseRef: '',
       cursor: false,
     })
+    openai.reset()
   }
 
-  const openai = useOpenAI({ history: abdul.history })
+  const openai = useOpenAI({ messages: abdul.messages })
 
   useEffect(() => {
     if (socket) {
-      const data = {
+      socket.emit(SocketEvents.AbdulResponse, {
         chatRoomId: currentChatroom,
-        isStreaming: openai.isStreaming,
-        refMessage: abdul.refMessage,
         response: openai.response,
+        responseRef: openai.responseRef,
         cursor: openai.cursor,
-      }
-      console.log(data)
-      socket.emit(SocketEvents.AskAbdul, data)
+      })
     }
   }, [socket, openai.response])
 
   useEffect(() => {
-    if (abdul.response) {
-      setAbdul((prev) => ({
-        ...prev,
-        refResponse: abdul.response,
-      }))
+    if (socket && !openai.message && openai.response) {
+      console.log('testt')
+      socket.emit(SocketEvents.AbdulMessage, {
+        mIdRef: uuid(),
+        chatRoomId: currentChatroom,
+        nameRef: meName || 'test',
+        message: openai.message,
+        messageRef: openai.messageRef,
+      })
     }
-  }, [abdul.response])
+  }, [socket, !!openai.message, !!openai.response])
 
   useEffect(() => {
-    if (!abdul.isStreaming) {
-      setAbdul((prev) =>
-        abdul.refMessage && abdul.refResponse
-          ? {
-              ...prev,
-              history: [
-                ...prev.history,
-                { role: 'user', content: abdul.refMessage },
-                { role: 'assistant', content: abdul.refResponse },
-              ],
-            }
-          : { ...prev }
-      )
+    if (socket && !abdul.message && abdul.response) {
+      setAbdul((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          {
+            role: 'user',
+            name: abdul.nameRef,
+            content: abdul.messageRef,
+          },
+        ],
+      }))
+      openai.setMessageRef(abdul.messageRef)
     }
-  }, [abdul.isStreaming])
+  }, [socket, abdul.mIdRef])
+
+  useEffect(() => {
+    if (socket && abdul.responseRef) {
+      setAbdul((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          {
+            role: 'assistant',
+            content: abdul.responseRef,
+          },
+        ],
+      }))
+      openai.setResponseRef(abdul.responseRef)
+    }
+  }, [socket, abdul.responseRef])
 
   const socketInitializer = async () => {
     // We just call it because we don't need anything else out of it
@@ -162,14 +188,29 @@ export default function Home() {
 
     // Abdul
     socket.on(
-      SocketEvents.BroadcastAbdulResponse,
-      ({ isStreaming, refMessage, response, cursor }) => {
-        console.log('abc')
+      SocketEvents.BroadcastAbdulMessage,
+      ({ mIdRef, nameRef, message, messageRef }) => {
+        console.log('on: BroadcastAbdulMessage')
         setAbdul((prev) => ({
           ...prev,
-          isStreaming,
-          refMessage,
+          mIdRef,
+          nameRef,
+          message,
+          messageRef,
+        }))
+      }
+    )
+
+    // Abdul
+    socket.on(
+      SocketEvents.BroadcastAbdulResponse,
+      ({ rIdRef, response, responseRef, cursor }) => {
+        console.log('on: BroadcastAbdulResponse')
+        setAbdul((prev) => ({
+          ...prev,
+          rIdRef,
           response,
+          responseRef,
           cursor,
         }))
       }
@@ -313,8 +354,8 @@ export default function Home() {
     <div
       className={
         theme
-          ? ' bg-slate-950 text-white w-screen h-screen relative'
-          : ' bg-white text-black w-screen h-screen relative'
+          ? ' bg-slate-950 text-white w-screen min-h-screen relative'
+          : ' bg-white text-black w-screen min-h-screen relative'
       }
     >
       <button
@@ -610,10 +651,7 @@ export default function Home() {
           {/* #MESSAGE BAR */}
           {!abdul.isChatRoom ? (
             <>
-              <form
-                className='flex justify-center mt-5 border-4'
-                onSubmit={Createmes}
-              >
+              <form className='flex justify-center mt-5' onSubmit={Createmes}>
                 <input
                   id='chatmessage'
                   className={
@@ -633,7 +671,7 @@ export default function Home() {
                 ></input>
                 <button className='px-4 py-2 bg-pink-400'>Send</button>
                 {/* #IS TYPING */}
-                <div id='is-typing-wrapper' className='w-[60%]'>
+                <div id='is-typing-wrapper' className='w-[60%] min-h-[40px]'>
                   {typingUsers !== '' && (
                     <h1 className={theme ? '  text-white ' : ' text-black'}>
                       {typingUsers} is typing ...
@@ -660,100 +698,110 @@ export default function Home() {
             // FOR ABDUL HERE
             <>
               <form
-                className='flex justify-center mt-5 border-4'
+                className='flex justify-center mt-5'
                 onSubmit={(event) => {
-                  Createmes(event)
-                  setAbdul((prev) => ({
-                    ...prev,
-                    refMessage: openai.message,
-                  }))
-                  openai.handleSubmit(event)
+                  event.preventDefault()
+                  if (socket && openai.message && !abdul.response) {
+                    // Createmes(event)
+                    console.log('submit form', {
+                      chatRoomId: currentChatroom,
+                      message: openai.message,
+                      messageRef: openai.messageRef,
+                    })
+                    // socket.emit(SocketEvents.AbdulMessage, {
+                    //   chatRoomId: currentChatroom,
+                    //   message: openai.message,
+                    //   messageRef: openai.messageRef,
+                    // })
+                    openai.handleSubmit(event)
+                  }
                 }}
               >
-                <input
-                  id='chatmessage'
-                  value={openai.message}
+                <div className='w-full flex justify-center'>
+                  <input
+                    id='chatmessage'
+                    value={openai.message}
+                    className={
+                      theme
+                        ? 'px-4 py-2 w-[50%] bg-white bg-opacity-50 '
+                        : 'px-4 py-2 w-[50%] bg-black bg-opacity-20 '
+                    }
+                    onChange={(event) => {
+                      // console.log('as')
+                      openai.setError(false)
+                      openai.handleChange(event)
+                      if (socket) {
+                        socket.emit(SocketEvents.Typing, currentChatroom)
+                      }
+                    }}
+                  />
+                  <input
+                    className='hidden'
+                    id='chatroomid'
+                    value={currentChatroom}
+                    readOnly
+                  ></input>
+                  <button
+                    type='submit'
+                    className='px-4 py-2 bg-pink-400'
+                    disabled={!!abdul.response || !openai.message}
+                  >
+                    Send
+                  </button>
+                </div>
+                {/* #IS TYPING */}
+              </form>
+              <div
+                id='is-typing-wrapper'
+                className='w-full flex-center flex-col'
+              >
+                {openai.isError && (
+                  <h1 className='text-red-500 min-h-[20px]'>
+                    ERROR: too many requests
+                  </h1>
+                )}
+                <h1
                   className={
                     theme
-                      ? 'px-4 py-2 w-[60%] bg-white bg-opacity-50 '
-                      : 'px-4 py-2 w-[60%] bg-black bg-opacity-20 '
+                      ? '  text-white min-h-[20px]'
+                      : ' text-black  min-h-[20px]'
                   }
-                  onChange={(event) => {
-                    // console.log('as')
-                    openai.handleChange(event)
-                    if (socket) {
-                      socket.emit(SocketEvents.Typing, currentChatroom)
-                    }
-                  }}
-                />
-                <input
-                  className='hidden'
-                  id='chatroomid'
-                  value={currentChatroom}
-                  readOnly
-                ></input>
-                <button
-                  type='submit'
-                  className='px-4 py-2 bg-pink-400'
-                  disabled={openai.isStreaming || !openai.message}
                 >
-                  Send
-                </button>
-                {/* #IS TYPING */}
-                <div id='is-typing-wrapper' className='w-[60%]'>
-                  {typingUsers !== '' && (
-                    <h1 className={theme ? '  text-white ' : ' text-black'}>
-                      {typingUsers} is typing ...
-                    </h1>
-                  )}
-                </div>
-              </form>
+                  {typingUsers !== '' && `${typingUsers} is typing ...`}
+                </h1>
+              </div>
               <h1 className='mt-3 text-2xl flex justify-center'>
                 Message In Chatroom
               </h1>
               <div className='mt-5 mx-10'>
-                {currentmessage?.map((data, index) => (
-                  <div
-                    className='flex flex-col gap-1 bg-opacity-80 bg-green-500 w-auto py-1 px-2'
-                    key={`${socket?.id}-${index}`}
-                  >
-                    <div>
+                <div
+                  className='flex flex-col gap-1 bg-opacity-80 bg-green-500 w-auto'
+                  style={{
+                    padding:
+                      abdul.messages.length === 0
+                        ? '0 8px 0 8px'
+                        : '4px 8px 4px 8px',
+                  }}
+                >
+                  {abdul.messages?.map((message, idx) => (
+                    <div key={`${socket?.id}-${idx}`}>
                       <span className='bg-blue-400 px-2 h-full'>
-                        {data.sender}
+                        {message.role === 'user' ? message.name : 'Abdul'}
                       </span>
-                      : {data.newmessage}
+                      <span>: {message.content}</span>
                     </div>
-                    {index === currentmessage?.length - 1 && abdul.response ? (
-                      <div>
-                        <span className='bg-blue-400 px-2 h-full'>Abdul</span>:{' '}
-                        {abdul.response}
+                  ))}
+                  {abdul.response && (
+                    <div>
+                      <span className='bg-blue-400 px-2 h-full'>Abdul</span>
+                      <span>
+                        : {abdul.response}
                         {abdul.cursor && '▋'}
-                      </div>
-                    ) : (
-                      abdul.history[2 * index + 1] && (
-                        <div>
-                          <span className='bg-blue-400 px-2 h-full'>Abdul</span>
-                          : {abdul.history[2 * index + 1]?.content}
-                        </div>
-                      )
-                    )}
-                  </div>
-                ))}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>Message: {openai.message}</div>
-              <div>
-                Response: {openai.response}
-                {openai.cursor && '▋'}
-              </div>
-              <div>
-                Shared: {abdul.response}
-                {abdul.cursor && '▋'}
-              </div>
-              <div>{JSON.stringify(openai.isStreaming)}</div>
-              <div>{JSON.stringify(abdul.isStreaming)}</div>
-              <div>{JSON.stringify(abdul.refMessage)}</div>
-              <div>{JSON.stringify(abdul.refResponse)}</div>
-              <div>{JSON.stringify(abdul.history)}</div>
             </>
           )}
         </>

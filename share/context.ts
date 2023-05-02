@@ -2,7 +2,13 @@ import { Server, Socket } from 'socket.io'
 
 export type onlineChatroomT = Map<
   string,
-  { chatroomid: string; member: string[]; roomName: string }
+  {
+    chatroomid: string
+    member: string[]
+    roomName: string
+    isAbdul: boolean
+    category: number[]
+  }
 >
 // export type onlineClientsT
 
@@ -26,6 +32,7 @@ export const onlineChatroom =
       member: string[]
       roomName: string
       category: Array<number>
+      isAbdul: boolean
     }
   >() //Create a  new map to save a chatroom and all the client in each on
 export const onlineClients = global.onlineClients || new Map<any, any>()

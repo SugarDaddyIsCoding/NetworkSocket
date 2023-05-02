@@ -1,12 +1,15 @@
 import { ChatCompletionRequestMessage } from 'openai-streams'
 
 export type Abdul = {
+  mIdRef: string | null
+  rIdRef: string | null
   isModal: boolean
   isChatRoom: boolean
-  isStreaming: boolean
-  history: ChatCompletionRequestMessage[]
-  refMessage: string
+  nameRef: string
+  messages: ChatCompletionRequestMessage[]
+  message: string
   response: string
-  refResponse: string
+  messageRef: string
+  responseRef: string
   cursor: boolean
 }
