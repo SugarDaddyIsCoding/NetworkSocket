@@ -53,11 +53,7 @@ export function useOpenAI(options?: OpenAIOptions) {
     })
     try {
       const _response = await fetch('/api/openai', {
-        mode: 'no-cors',
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           messages: tmp,
         }),
