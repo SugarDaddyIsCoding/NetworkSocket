@@ -52,7 +52,7 @@ export function useOpenAI(options?: OpenAIOptions) {
       content: message,
     })
     try {
-      const _response = await fetch('http://localhost:3000/api/openai', {
+      const _response = await fetch('/api/openai', {
         mode: 'no-cors',
         method: 'POST',
         headers: {
